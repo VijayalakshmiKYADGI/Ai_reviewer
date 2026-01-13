@@ -1,0 +1,1 @@
+-- Database schema will be defined here in Phase 2
