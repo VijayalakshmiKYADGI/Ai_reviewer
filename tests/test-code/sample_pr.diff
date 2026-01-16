@@ -1,0 +1,19 @@
+diff --git a/src/main.py b/src/main.py
+index 83db48f..bf03874 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -10,4 +10,4 @@ def main():
+-    print("Hello World")
++    print("Hello Universe")
+     return 0
+diff --git a/tests/test_main.py b/tests/test_main.py
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/tests/test_main.py
+@@ -0,0 +1,5 @@
++def test_main():
++    assert True
++diff --git a/README.md b/README.md
+deleted file mode 100644
+index e69de29..0000000
