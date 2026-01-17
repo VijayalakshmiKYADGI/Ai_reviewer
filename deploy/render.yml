@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: code-review-crew
+    env: docker
+    dockerfilePath: ./Dockerfile
+    repo: https://github.com/YOUR_USERNAME/code-review-crew # Update this after forking/pushing
+    region: singapore
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GITHUB_APP_ID
+        fromDatabase:
+          name: code-review-crew
+          property: app_id
+      - key: GITHUB_WEBHOOK_SECRET
+        fromDatabase:
+          name: code-review-crew
+          property: webhook_secret
+      - key: GITHUB_INSTALLATION_ID
+        fromDatabase:
+          name: code-review-crew
+          property: installation_id
+      - key: DATABASE_URL
+        fromDatabase:
+          name: code-review-crew-db
+          property: connectionString
+      - key: GITHUB_PRIVATE_KEY_PATH
+        value: /etc/secrets/github_private_key.pem
+    autoDeploy: true
+
+databases:
+  - name: code-review-crew-db
+    plan: starter
+    region: singapore

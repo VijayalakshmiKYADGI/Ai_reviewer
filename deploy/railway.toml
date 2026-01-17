@@ -1,0 +1,23 @@
+[build]
+builder = "NIXPACKS"
+
+[[services]]
+internalHostname = "api"
+# Public hostname pattern - allows checking what the URL will likely be
+# Note: Railway generates random suffixes, so this is just for reference/alias if using custom domain
+publicHostname = "code-review-crew.up.railway.app"
+
+[services.ports]
+port = 8000
+protocol = "TCP"
+
+[services.env]
+# Placeholder values - User must update these in Railway Dashboard
+GEMINI_API_KEY = "your_key_here"
+GITHUB_APP_ID = "2669766"
+GITHUB_INSTALLATION_ID = "104539256"
+# GITHUB_WEBHOOK_SECRET should be set manually in dashboard for security
+
+# Build command: Railway Nixpacks auto-detects requirements.txt
+# Start command:
+startCommand = "uvicorn api.main:app --host 0.0.0.0 --port 8000"

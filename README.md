@@ -1,6 +1,36 @@
-# AI Code Reviewer
+# AI Code Reviewer 🤖
 
-Production-ready AI code review system using CrewAI and Google Gemini.
+**Auto-scaling, AI-powered Code Review System using Google Gemini 2.0 and CrewAI**
+
+Review Pull Requests automatically with an autonomous agent team. Identify bugs, security vulnerabilities, and performance issues instantly.
+
+🚀 **LIVE DEMO**: `https://code-review-crew.up.railway.app/health`
+
+## 🌟 FREE & OPEN SOURCE PRODUCTION SETUP
+
+Deploy this entire system for **$0/month** using our recommended free stack.
+
+### Quick Start (5 Minutes)
+
+1. **Railway (Free Web Hosting)**
+   ```bash
+   npm install -g @railway/cli
+   railway login && railway up
+   ```
+
+2. **Supabase (Free Postgres Database)**
+   - Create free project at [supabase.com](https://supabase.com)
+   - Run SQL from `deploy/supabase.sql` in their SQL Editor.
+
+3. **Configure Secrets**
+   Set `DATABASE_URL`, `GEMINI_API_KEY`, etc. in Railway Dashboard.
+
+4. **GitHub App Webhook**
+   Point your App's webhook to your Railway URL.
+
+**COST**: ₹0/month | **USAGE**: Unlimited | **LICENSE**: MIT
+
+---
 
 ## Features
 
