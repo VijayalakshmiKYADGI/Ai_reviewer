@@ -2,52 +2,156 @@
 GitHubClient - Authenticated GitHub API client
 
 Handles:
-- Personal Access Token authentication
+- Personal Access Token authentication (Phase 8)
+- GitHub App JWT + Installation tokens (Phase 10)
 - Rate limiting with exponential backoff
 - Error handling and retries
-- Future GitHub App support
 """
 
 import os
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from github import Github, GithubException
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 import httpx
 from dotenv import load_dotenv
+import structlog
 
 load_dotenv()
 
+logger = structlog.get_logger()
+
 
 class GitHubClient:
-    """Authenticated GitHub API client with rate limiting and error handling."""
+    """Authenticated GitHub API client with dual-mode authentication and rate limiting."""
     
-    def __init__(self, token: Optional[str] = None):
+    def __init__(
+        self,
+        auth_mode: Literal["token", "app"] = "token",
+        token: Optional[str] = None
+    ):
         """
         Initialize GitHub client with authentication.
         
         Args:
-            token: GitHub Personal Access Token. If None, reads from GITHUB_TOKEN env var.
+            auth_mode: Authentication mode - "token" for PAT, "app" for GitHub App
+            token: GitHub Personal Access Token (for "token" mode). If None, reads from env.
         """
-        self.token = token or os.getenv("GITHUB_TOKEN")
-        if not self.token:
-            raise ValueError(
-                "GitHub token not found. Set GITHUB_TOKEN environment variable "
-                "or pass token to GitHubClient constructor."
+        self.auth_mode = auth_mode
+        self.token = None
+        self.app_auth = None
+        self.installation_manager = None
+        
+        if auth_mode == "token":
+            # Personal Access Token mode (Phase 8)
+            self.token = token or os.getenv("GITHUB_TOKEN")
+            if not self.token:
+                raise ValueError(
+                    "GitHub token not found. Set GITHUB_TOKEN environment variable "
+                    "or pass token to GitHubClient constructor."
+                )
+            
+            # Initialize PyGithub client
+            self.github = Github(self.token)
+            
+            # Async HTTP client for additional API calls
+            self.http_client = httpx.AsyncClient(
+                headers={
+                    "Authorization": f"token {self.token}",
+                    "Accept": "application/vnd.github.v3+json"
+                },
+                timeout=30.0
             )
+            
+            logger.info("github_client_initialized", auth_mode="token")
         
-        # Initialize PyGithub client
-        self.github = Github(self.token)
+        elif auth_mode == "app":
+            # GitHub App mode (Phase 10)
+            try:
+                from .app_auth import GitHubAppAuth
+                from .installation import InstallationManager
+                from config.app_config import GitHubAppConfig
+                
+                # Load config
+                config = GitHubAppConfig.from_env()
+                
+                # Initialize App auth
+                self.app_auth = GitHubAppAuth(
+                    app_id=config.app_id,
+                    private_key_path=config.private_key_path
+                )
+                
+                # Initialize installation manager
+                self.installation_manager = InstallationManager()
+                
+                # HTTP client (will be updated with installation token per request)
+                self.http_client = httpx.AsyncClient(
+                    headers={"Accept": "application/vnd.github.v3+json"},
+                    timeout=30.0
+                )
+                
+                # PyGithub client will be initialized with installation token
+                self.github = None
+                
+                logger.info("github_client_initialized", auth_mode="app", app_id=config.app_id)
+            
+            except Exception as e:
+                logger.error("app_auth_failed", error=str(e))
+                
+                # Fallback to token mode
+                logger.warning("falling_back_to_token_auth")
+                self.auth_mode = "token"
+                self.token = os.getenv("GITHUB_TOKEN")
+                
+                if not self.token:
+                    raise ValueError(
+                        f"GitHub App authentication failed: {e}. "
+                        "Fallback to token mode also failed (no GITHUB_TOKEN)."
+                    )
+                
+                self.github = Github(self.token)
+                self.http_client = httpx.AsyncClient(
+                    headers={
+                        "Authorization": f"token {self.token}",
+                        "Accept": "application/vnd.github.v3+json"
+                    },
+                    timeout=30.0
+                )
         
-        # Async HTTP client for additional API calls
-        self.http_client = httpx.AsyncClient(
-            headers={
-                "Authorization": f"token {self.token}",
-                "Accept": "application/vnd.github.v3+json"
-            },
-            timeout=30.0
-        )
+        else:
+            raise ValueError(f"Invalid auth_mode: {auth_mode}. Must be 'token' or 'app'.")
+    
+    async def get_access_token(self, repo_full_name: Optional[str] = None) -> str:
+        """
+        Get access token for API requests.
+        
+        Args:
+            repo_full_name: Full repository name (owner/repo) - required for app mode
+            
+        Returns:
+            Access token (PAT or installation token)
+        """
+        if self.auth_mode == "token":
+            return self.token
+        
+        elif self.auth_mode == "app":
+            # Get installation ID for repo
+            if not repo_full_name:
+                raise ValueError("repo_full_name required for app mode")
+            
+            installation_id = await self.installation_manager.get_installation_id(repo_full_name)
+            
+            if not installation_id:
+                raise ValueError(f"No installation found for {repo_full_name}")
+            
+            # Get installation token
+            installation_token = await self.app_auth.get_installation_token(installation_id)
+            
+            return installation_token
+        
+        return ""
+
         
     def _handle_rate_limit(self, retry_count: int = 0, max_retries: int = 3):
         """

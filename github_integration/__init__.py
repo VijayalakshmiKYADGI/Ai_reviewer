@@ -14,6 +14,8 @@ from .commenter import GitHubCommenter
 from .mocks import MockPRData
 from .webhook_handler import WebhookHandler
 from .signature import verify_webhook_signature, generate_webhook_signature
+from .app_auth import GitHubAppAuth
+from .installation import InstallationManager
 
 __all__ = [
     "GitHubClient",
@@ -25,4 +27,6 @@ __all__ = [
     "WebhookHandler",
     "verify_webhook_signature",
     "generate_webhook_signature",
+    "GitHubAppAuth",
+    "InstallationManager",
 ]
