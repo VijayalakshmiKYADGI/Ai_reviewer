@@ -1,0 +1,32 @@
+name: Test Performance Review
+on:
+  push:
+    branches: [test-performance]
+
+jobs:
+  trigger-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { repo, owner } = context.repo;
+          try {
+            const result = await github.rest.pulls.create({
+              owner,
+              repo,
+              title: '🐌 Test Performance Review',
+              head: 'test-performance',
+              base: 'main',
+              body: 'This PR triggers a performance review to test Complexity analysis.'
+            });
+            console.log(`PR Created: ${result.data.html_url}`);
+          } catch (error) {
+            console.log(`PR creation failed (maybe exists): ${error.message}`);
+          }
