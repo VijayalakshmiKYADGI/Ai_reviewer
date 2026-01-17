@@ -1,0 +1,43 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "url": "https://api.github.com/repos/test-org/test-repo/pulls/1",
+    "id": 1,
+    "number": 1,
+    "state": "open",
+    "title": "Add new feature",
+    "user": {
+      "login": "test-developer",
+      "id": 12345
+    },
+    "body": "This PR adds a new feature to the application.",
+    "created_at": "2026-01-17T08:00:00Z",
+    "updated_at": "2026-01-17T08:00:00Z",
+    "html_url": "https://github.com/test-org/test-repo/pull/1",
+    "head": {
+      "ref": "feature-branch",
+      "sha": "abc123def456"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "def456abc123"
+    }
+  },
+  "repository": {
+    "id": 123456,
+    "name": "test-repo",
+    "full_name": "test-org/test-repo",
+    "owner": {
+      "login": "test-org",
+      "id": 67890
+    },
+    "html_url": "https://github.com/test-org/test-repo",
+    "description": "Test repository for webhook testing",
+    "private": false
+  },
+  "sender": {
+    "login": "test-developer",
+    "id": 12345
+  }
+}

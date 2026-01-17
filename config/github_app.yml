@@ -1,0 +1,58 @@
+# GitHub App Configuration (Phase 10 Preview)
+#
+# This file documents the required GitHub App settings for Phase 10.
+# Use this as a reference when creating your GitHub App.
+
+name: code-review-crew
+description: Automated AI code review using CrewAI and Google Gemini
+
+# Required Permissions
+permissions:
+  pull_requests: write     # Post reviews and comments
+  contents: read           # Read PR diffs and file contents
+  issues: write            # Optional: Comment on issues
+  metadata: read           # Read repository metadata
+
+# Webhook Events
+# Subscribe to these events to trigger automated reviews
+events:
+  - pull_request           # PR opened, synchronized, reopened, closed
+
+# Webhook Configuration
+webhook:
+  # Your public webhook URL (use ngrok for local testing)
+  url: https://your-domain.com/webhook/github
+  
+  # Webhook secret (must match GITHUB_WEBHOOK_SECRET in .env)
+  # Generate with: openssl rand -hex 32
+  secret: your_webhook_secret_here
+  
+  # Content type
+  content_type: application/json
+  
+  # SSL verification (always enabled in production)
+  insecure_ssl: "0"
+
+# Installation
+# Where can this app be installed?
+installation:
+  # Public: Any user or organization can install
+  # Private: Only your account
+  type: public  # or private
+
+# Post-installation setup
+setup_url: https://your-domain.com/setup
+
+# Callback URL (OAuth)
+callback_url: https://your-domain.com/auth/callback
+
+# Homepage
+homepage_url: https://github.com/your-org/code-review-crew
+
+# Phase 10 Implementation Notes:
+# 1. Create GitHub App in GitHub Settings → Developer Settings
+# 2. Generate private key and save to code-review-crew-dev.private-key.pem
+# 3. Install app on target repositories
+# 4. Update .env with GITHUB_APP_ID and GITHUB_PRIVATE_KEY_PATH
+# 5. Implement JWT-based authentication in github_integration/client.py
+# 6. Replace PAT auth with installation token auth

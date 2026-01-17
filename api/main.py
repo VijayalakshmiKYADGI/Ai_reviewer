@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from data.database import  init_database
 from api.middleware import RateLimitMiddleware, LoggingMiddleware
-from api.endpoints import health, file_review, pr_review
+from api.endpoints import health, file_review, pr_review, webhook
 import structlog
 
 logger = structlog.get_logger()
@@ -39,6 +39,7 @@ app.add_middleware(LoggingMiddleware)
 app.include_router(health.router)
 app.include_router(file_review.router)
 app.include_router(pr_review.router)
+app.include_router(webhook.router)  # Phase 9: Webhook endpoint
 
 # Fix rate limit strictness
 # Re-adding middleware with correct params if needed, 
