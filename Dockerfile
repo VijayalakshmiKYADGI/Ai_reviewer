@@ -31,7 +31,10 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY . .
 
 # Create non-root user for security
-RUN useradd -m crewai && chown -R crewai:crewai /app
+# Create non-root user for security and ensure data dir exists/permissions
+RUN useradd -m crewai && \
+    mkdir -p /app/data && \
+    chown -R crewai:crewai /app
 
 # Switch to non-root user
 USER crewai
