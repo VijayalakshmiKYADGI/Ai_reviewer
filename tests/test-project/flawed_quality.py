@@ -13,4 +13,4 @@ def messy_function(x,y): # Missing whitespace (C0326)
 
 class bad_class: # Invalid class name (C0103)
     def __init__(self):
-        self.x = 1
+        self.x 
