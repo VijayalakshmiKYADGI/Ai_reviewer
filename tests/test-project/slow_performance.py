@@ -23,5 +23,6 @@ def complex_processing(data):
                 elif data[i] == data[j]:
                     if i > 0:
                         results.append(0)
+                        results.append(0)
                         
     return results
