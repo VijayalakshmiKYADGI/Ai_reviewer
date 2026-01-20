@@ -24,8 +24,8 @@ class ReportAggregatorAgent:
                 You formats the output as a professional GitHub Pull Request review."""),
             tools=[], # Pure reasoning agent
             llm=self.llm,
-            verbose=True,
-            memory=True,
+            verbose=False,  # Disabled to reduce Railway log spam
+            memory=False,
             max_iter=2,
             allow_delegation=False
         )

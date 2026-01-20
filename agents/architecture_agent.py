@@ -38,8 +38,8 @@ class ArchitectureAgent:
                 )
             ],
             llm=self.llm,
-            verbose=True,
-            memory=True,
+            verbose=False,  # Disabled to reduce Railway log spam
+            memory=False,
             max_iter=2,
             allow_delegation=False
         )

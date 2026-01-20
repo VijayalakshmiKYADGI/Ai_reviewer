@@ -47,7 +47,7 @@ class PerformanceAgent:
                 )
             ],
             llm=self.llm,
-            verbose=True,
+            verbose=False,  # Disabled to reduce Railway log spam
             memory=True,
             max_iter=3,
             allow_delegation=False
