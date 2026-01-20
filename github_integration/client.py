@@ -318,6 +318,49 @@ class GitHubClient:
         
         raise Exception("Failed to create review after retries")
     
+    async def create_issue_comment(
+        self,
+        repo: str,
+        pr_number: int,
+        body: str
+    ) -> str:
+        """
+        Create a comment on a PR (as issue comment).
+        
+        Used as fallback when inline review comments fail.
+        
+        Args:
+            repo: Full repo name (owner/repo)
+            pr_number: PR number
+            body: Comment body
+            
+        Returns:
+            Comment ID
+        """
+        url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
+        
+        payload = {"body": body}
+        
+        retry_count = 0
+        while retry_count < 3:
+            try:
+                response = await self.http_client.post(url, json=payload)
+                
+                if response.status_code == 429:
+                    self._handle_rate_limit(retry_count)
+                    retry_count += 1
+                    continue
+                
+                response.raise_for_status()
+                result = response.json()
+                return str(result.get("id", ""))
+            
+            except httpx.HTTPStatusError as e:
+                logger.error("create_comment_failed", status=e.response.status_code, error=str(e))
+                raise
+        
+        raise Exception("Failed to create comment after retries")
+    
     async def get_installation_token(self, installation_id: int) -> str:
         """
         Get installation access token for GitHub App (Phase 10).

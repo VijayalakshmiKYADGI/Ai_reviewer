@@ -110,3 +110,8 @@ class GitHubAppConfig:
             self.installation_id,
             self.webhook_url
         ])
+
+
+# Phase 15: Production Configuration
+ENABLE_CREWAI_PIPELINE = os.getenv("ENABLE_CREWAI_PIPELINE", "true").lower() == "true"
+MAX_FINDINGS_PER_PR = int(os.getenv("MAX_FINDINGS_PER_PR", "20"))

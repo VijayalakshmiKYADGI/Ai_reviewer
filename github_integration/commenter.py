@@ -154,8 +154,18 @@ class GitHubCommenter:
             return review_id
         
         except Exception as e:
-            print(f"❌ Failed to post review: {e}")
-            raise
+            # Handle 422 "line not in diff" errors
+            if "422" in str(e) or "Unprocessable Entity" in str(e):
+                print(f"⚠️ Inline comments failed (422), falling back to PR comment")
+                # Fallback: Post as single PR comment
+                return await self._post_as_pr_comment(
+                    repo_full_name,
+                    pr_number,
+                    github_review
+                )
+            else:
+                print(f"❌ Failed to post review: {e}")
+                raise
     
     def format_review_preview(self, github_review: GitHubReview) -> str:
         """
@@ -199,3 +209,51 @@ class GitHubCommenter:
         lines.append("=" * 60)
         
         return "\n".join(lines)
+    
+    async def _post_as_pr_comment(
+        self,
+        repo_full_name: str,
+        pr_number: int,
+        github_review: GitHubReview
+    ) -> str:
+        """
+        Fallback: Post review as single PR comment when inline comments fail.
+        
+        Used when GitHub API returns 422 (line not in diff).
+        
+        Args:
+            repo_full_name: Full repo name (owner/repo)
+            pr_number: PR number
+            github_review: GitHubReview object
+            
+        Returns:
+            Comment ID
+        """
+        # Format all findings as single comment
+        comment_body = f"""## 🤖 AI Code Review Summary
+
+{github_review.summary_comment}
+
+### 📋 Findings ({len(github_review.inline_comments)}):
+
+"""
+        
+        for i, comment in enumerate(github_review.inline_comments, 1):
+            path = comment.get("path", "unknown")
+            line = comment.get("line", 0)
+            body = comment.get("body", "")
+            formatted_body = self._format_comment_body(comment)
+            
+            comment_body += f"{i}. **`{path}:L{line}`** - {formatted_body}\n"
+        
+        comment_body += "\n---\n*Posted as single comment due to diff position conflicts*\n"
+        
+        # Post as issue comment
+        comment_id = await self.client.create_issue_comment(
+            repo=repo_full_name,
+            pr_number=pr_number,
+            body=comment_body
+        )
+        
+        print(f"✅ Posted fallback comment to {repo_full_name}#{pr_number} (Comment ID: {comment_id})")
+        return str(comment_id)

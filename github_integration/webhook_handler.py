@@ -17,6 +17,7 @@ from .pr_fetcher import PRFetcher, PRData
 from .commenter import GitHubCommenter
 from .client import GitHubClient
 from tasks.format_comments_task import GitHubReview
+from data.models import ReviewInput
 
 logger = structlog.get_logger()
 
@@ -235,33 +236,34 @@ class WebhookHandler:
                 "files_changed": [f.filename for f in pr_data.files_changed]
             }
             
-            # Execute pipeline
-            # For Phase 9, we'll use a simplified approach
-            # Phase 10 will integrate with full database persistence
-            
-            # Create mock review for now
-            # TODO: Integrate with actual CrewAI pipeline
-            review = GitHubReview(
-                inline_comments=[
-                    {
-                        "path": pr_data.files_changed[0].filename if pr_data.files_changed else "README.md",
-                        "line": "1",
-                        "body": "🤖 Automated review in progress. Full analysis coming soon!"
-                    }
-                ],
-                summary_comment=f"""## 🤖 AI Code Review
-
-Analyzed {len(pr_data.files_changed)} files in PR #{pr_data.pr_number}.
-
-**Status**: Review pipeline executed successfully.
-**Delivery ID**: {delivery_id}
-
-*This is a Phase 9 webhook test. Full CrewAI integration in Phase 10.*
-""",
-                review_state="COMMENTED"
+            # Execute CrewAI pipeline (Phase 15: Production)
+            # Create ReviewInput for the pipeline
+            review_input = ReviewInput(
+                repo_name=pr_data.repo_name,
+                pr_number=pr_data.pr_number,
+                pr_url=f"https://github.com/{pr_data.repo_name}/pull/{pr_data.pr_number}",
+                diff_content=pr_data.full_diff,
+                files_changed=[f.filename for f in pr_data.files_changed]
             )
             
-            return review
+            logger.info(
+                "executing_crewai_pipeline",
+                repo=pr_data.repo_name,
+                pr_number=pr_data.pr_number,
+                files_count=len(pr_data.files_changed)
+            )
+            
+            # Execute the full CrewAI review pipeline
+            result = await execute_review_pipeline(review_input)
+            
+            logger.info(
+                "crewai_pipeline_completed",
+                repo=pr_data.repo_name,
+                pr_number=pr_data.pr_number,
+                findings_count=len(result.inline_comments) if result else 0
+            )
+            
+            return result
         
         except Exception as e:
             logger.error(

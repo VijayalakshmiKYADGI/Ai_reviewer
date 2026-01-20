@@ -1,0 +1,10 @@
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login (FREE account)
+railway login
+
+# Deploy your repo
+cd /path/to/your/code-review-crew
+railway init  # Link to your GitHub repo
+railway up    # 🚀 LIVE in 60 seconds!
