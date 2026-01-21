@@ -1,18 +1,18 @@
 import os
 from textwrap import dedent
-from crewai import Agent
+from crewai import Agent, LLM
 from langchain.tools import Tool
 
 from tools import RadonTool, TreeSitterParser
-from .gemini_llm import GeminiLLM
 import structlog
 
 logger = structlog.get_logger()
 
 class PerformanceAgent:
     def __init__(self):
-        self.llm = GeminiLLM(
-            model_name="gemini-1.5-pro",
+        self.llm = LLM(
+            model="gemini/gemini-1.5-pro",
+            api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
         self.radon = RadonTool()
