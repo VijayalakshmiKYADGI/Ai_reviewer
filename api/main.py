@@ -25,7 +25,12 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    logger.info("startup_event")
+    VERSION = "v2.1.0-hotfix-api-auth"  # Update this with each deployment
+    logger.info("startup_event", version=VERSION)
+    logger.info("deployment_info", 
+                version=VERSION,
+                timestamp=os.getenv("RAILWAY_DEPLOYMENT_ID", "local"),
+                commit=os.getenv("RAILWAY_GIT_COMMIT_SHA", "unknown")[:7])
     
     # Initialize DB (Safe to call repeatedly, verifies connection)
     try:
