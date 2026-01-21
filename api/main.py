@@ -9,9 +9,16 @@ import structlog
 import os
 import warnings
 
-# Suppress Pydantic V2 deprecation warnings from libraries
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
+# Suppress ALL deprecation warnings from external libraries
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", message=".*PydanticDeprecatedSince20.*")
+warnings.filterwarnings("ignore", message=".*pkg_resources.*")
+warnings.filterwarnings("ignore", message=".*__fields__.*")
+warnings.filterwarnings("ignore", message=".*declare_namespace.*")
+warnings.filterwarnings("ignore", message=".*datetime.datetime.utcnow.*")
+warnings.filterwarnings("ignore", message=".*login_or_token.*")
+warnings.filterwarnings("ignore", message=".*@validator.*")
 
 logger = structlog.get_logger()
 

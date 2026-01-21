@@ -14,12 +14,21 @@ class GeminiLLM(BaseChatModel):
     
     model_name: str = "gemini-1.5-pro"
     temperature: float = 0.1
-    api_key: Optional[str] = Field(default_factory=lambda: os.getenv("GEMINI_API_KEY"))
+    api_key: Optional[str] = None
     
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
+        # Get API key from kwargs or environment
+        api_key = kwargs.pop('api_key', None) or os.getenv("GEMINI_API_KEY")
+        
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY must be set in environment or passed as argument")
+        
+        # Initialize parent with api_key set
+        super().__init__(api_key=api_key, **kwargs)
+        
+        # Configure Gemini SDK
+        genai.configure(api_key=self.api_key)
+        logger.info("gemini_llm_initialized", model=self.model_name)
             
     @property
     def _llm_type(self) -> str:
