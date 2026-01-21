@@ -44,9 +44,16 @@ class ReviewCrew:
         )
         
         # 3. Create Crew
-        # CRITICAL: Pass GeminiLLM as manager_llm to prevent CrewAI from using OpenAI
-        from agents.gemini_llm import GeminiLLM
-        manager_llm = GeminiLLM(model_name="gemini-1.5-pro", temperature=0.1)
+        # Use CrewAI's LLM class with LiteLLM for proper Gemini support
+        from crewai import LLM
+        import os
+        
+        # LiteLLM format: "gemini/model-name"
+        gemini_llm = LLM(
+            model="gemini/gemini-1.5-pro",
+            api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.1
+        )
         
         self.crew = Crew(
             agents=list(agents.values()),
@@ -54,7 +61,7 @@ class ReviewCrew:
             process=Process.sequential,
             verbose=self.config.verbose,
             memory=self.config.enable_memory,
-            manager_llm=manager_llm  # Use Gemini instead of OpenAI default
+            manager_llm=gemini_llm  # Use LiteLLM-based Gemini
         )
         
     def kickoff(self, review_input: ReviewInput) -> GitHubReview:
