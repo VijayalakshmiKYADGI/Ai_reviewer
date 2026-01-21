@@ -137,10 +137,14 @@ class WebhookHandler:
         
         # Post review to GitHub
         if review_result:
+            # Get list of valid file paths from PR data
+            valid_paths = [f.filename for f in pr_info.files_changed]
+            
             review_id = await self.commenter.post_review(
                 repo_full_name,
                 pr_number,
-                review_result
+                review_result,
+                valid_paths=valid_paths
             )
             
             return {

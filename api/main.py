@@ -7,6 +7,11 @@ from api.endpoints import health, file_review, pr_review, webhook
 from monitoring import metrics
 import structlog
 import os
+import warnings
+
+# Suppress Pydantic V2 deprecation warnings from libraries
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="pydantic")
+warnings.filterwarnings("ignore", message=".*PydanticDeprecatedSince20.*")
 
 logger = structlog.get_logger()
 
