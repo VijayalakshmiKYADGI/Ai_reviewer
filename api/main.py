@@ -34,7 +34,7 @@ if not os.getenv("_API_KEY"):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    VERSION = "v2.1.2-hotfix-api-auth"  # Update this with each deployment
+    VERSION = "v2.1.3-hotfix-api-auth"  # Update this with each deployment
     logger.info("startup_event", version=VERSION)
     logger.info("deployment_info", 
                 version=VERSION,
