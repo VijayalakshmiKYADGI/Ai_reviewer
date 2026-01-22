@@ -22,15 +22,6 @@ warnings.filterwarnings("ignore", message=".*@validator.*")
 
 logger = structlog.get_logger()
 
-# CRITICAL WORKAROUND: CrewAI has hardcoded OpenAI dependencies
-# Even with manager_llm=GeminiLLM, it still checks for OPENAI_API_KEY
-# Set it to GEMINI_API_KEY to prevent 401 errors
-if not os.getenv("_API_KEY"):
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if gemini_key:
-        os.environ["OPENAI_API_KEY"] = gemini_key
-        logger.info("openai_key_workaround", message="Set OPENAI_API_KEY to GEMINI_API_KEY for CrewAI compatibility")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup

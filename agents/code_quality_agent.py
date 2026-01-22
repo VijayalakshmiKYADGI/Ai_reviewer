@@ -4,15 +4,16 @@ from crewai import Agent
 from langchain.tools import Tool
 
 from tools import PylintTool, TreeSitterParser
-from .gemini_llm import GeminiLLM
+from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
 logger = structlog.get_logger()
 
 class CodeQualityAgent:
     def __init__(self):
-        self.llm = GeminiLLM(
-            model_name="gemini-1.5-pro",
+        self.llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-pro",
+            google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
         self.pylint = PylintTool()

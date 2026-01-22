@@ -44,9 +44,15 @@ class ReviewCrew:
         )
         
         # 3. Create Crew
-        # Use GeminiLLM wrapper (LLM class doesn't exist in crewai 0.51.1)
-        from agents.gemini_llm import GeminiLLM
-        manager_llm = GeminiLLM(model_name="gemini-1.5-pro", temperature=0.1)
+        # Use official ChatGoogleGenerativeAI (compatible with CrewAI 0.51.1)
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        import os
+        
+        manager_llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-pro",
+            google_api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.1
+        )
         
         self.crew = Crew(
             agents=list(agents.values()),
