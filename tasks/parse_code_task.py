@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 from tools import DiffParser, TreeSitterParser
 from data.models import ReviewInput
 

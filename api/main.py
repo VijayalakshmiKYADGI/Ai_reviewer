@@ -70,7 +70,7 @@ app.add_middleware(LoggingMiddleware)
 
 # Routers
 app.include_router(health.router)
-app.include_router(metrics.router) # Production Metrics
+app.include_router(metrics.router) 
 app.include_router(file_review.router)
 app.include_router(pr_review.router)
 app.include_router(webhook.router)

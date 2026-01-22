@@ -1,7 +1,7 @@
 import os
 from textwrap import dedent
 from crewai import Agent
-from langchain.tools import Tool
+from langchain_core.tools import Tool
 
 from tools import TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
