@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from tools import DiffParser, TreeSitterParser
+from tools import DiffParser, TreeSitterParser, DiffParsingTool
 from data.models import ReviewInput
 
 class ParseCodeTask:
