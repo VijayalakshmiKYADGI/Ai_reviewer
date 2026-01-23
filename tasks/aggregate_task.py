@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from langchain_core.tools import Tool
+from crewai_tools import Tool
 from tools import FindingAggregator
 from data.models import ReviewSummary, ReviewFinding
 import json
