@@ -3,7 +3,7 @@ from textwrap import dedent
 from crewai import Agent
 from crewai_tools import Tool
 
-from tools import TreeSitterParser
+from tools import TreeSitterTool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -18,10 +18,6 @@ class ArchitectureAgent:
         )
         self.parser = TreeSitterParser()
 
-    def _structure_wrapper(self, code: str) -> str:
-        blocks = self.parser.parse_code(code, "analyzed_file.py")
-        return str([str(b) for b in blocks])
-
     def create(self) -> Agent:
         return Agent(
             role="Software Architect",
@@ -32,11 +28,7 @@ class ArchitectureAgent:
                 You suggest design patterns (Factory, Observer, etc.) and architectural improvements.
                 You rely on code structure analysis to understand class relationships."""),
             tools=[
-                Tool(
-                    name="Code Structure Analysis",
-                    func=self._structure_wrapper,
-                    description="Extract classes and functions to analyze hierarchy and coupling. Input is python code string."
-                )
+                TreeSitterTool()
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam

@@ -97,3 +97,14 @@ class TreeSitterParser:
         """Convenience method to get only function blocks."""
         blocks = self.parse_code(code, "memory")
         return [b for b in blocks if b.type == "function_definition"]
+
+from crewai_tools import BaseTool
+
+class TreeSitterTool(BaseTool):
+    name: str = "AST Parsing"
+    description: str = "Parse Python code into structural blocks (functions, classes). Input is python code string."
+
+    def _run(self, code: str) -> str:
+        parser = TreeSitterParser()
+        blocks = parser.parse_code(code, "analyzed_file.py")
+        return str([str(b) for b in blocks])

@@ -13,22 +13,20 @@ from data.models import ReviewFinding
 
 logger = structlog.get_logger()
 
-class RadonTool:
-    """Wrapper around Radon for complexity analysis."""
-    
-    def analyze_complexity(self, code: str, filename: str) -> List[ReviewFinding]:
+from crewai_tools import BaseTool
+
+class RadonTool(BaseTool):
+    name: str = "Radon Complexity Analysis"
+    description: str = "Run Radon on python code to measure complexity. Input: python code string."
+
+    def _run(self, code: str) -> str:
         """
         Run radon cc on code.
-        
-        Args:
-            code: Python source code
-            filename: Virtual filename
-            
-        Returns:
-            List of ReviewFinding objects
+        returns: JSON string of findings
         """
+        filename = "analyzed_file.py"
         if not code.strip():
-            return []
+            return "[]"
             
         findings = []
         
@@ -48,7 +46,6 @@ class RadonTool:
             if cc_process.stdout:
                 try:
                     data = json.loads(cc_process.stdout)
-                    # Data format: {filename: [{type, rank, complexity, lineno, name...}]}
                     
                     file_blocks = data.get(tmp_path, [])
                     for block in file_blocks:
@@ -62,7 +59,7 @@ class RadonTool:
                             severity = "MEDIUM"
                             desc = f"Cyclomatic complexity {cc} (high) in {block.get('type')} '{block.get('name')}'"
                         else:
-                            continue # Ignore low complexity
+                            continue 
                             
                         findings.append(ReviewFinding(
                             severity=severity,
@@ -88,8 +85,6 @@ class RadonTool:
             if mi_process.stdout:
                 try:
                     data = json.loads(mi_process.stdout)
-                    # Data format: {filename: {mi: float, rank: str}}
-                    
                     metrics = data.get(tmp_path, {})
                     mi = metrics.get("mi", 100)
                     
@@ -108,11 +103,11 @@ class RadonTool:
                     pass
                     
             logger.info("radon_scan_complete", filename=filename, count=len(findings))
-            return findings
+            return str([f.model_dump() for f in findings])
             
         except Exception as e:
             logger.error("radon_error", filename=filename, error=str(e))
-            return []
+            return "[]"
         finally:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)

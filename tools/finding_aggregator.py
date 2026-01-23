@@ -73,3 +73,27 @@ class FindingAggregator:
             if f.severity in stats:
                 stats[f.severity] += 1
         return stats
+
+from crewai_tools import BaseTool
+import json
+
+class FindingAggregatorTool(BaseTool):
+    name: str = "Finding Aggregator"
+    description: str = "Aggregate and deduplicate a list of finding objects (JSON string). Input: JSON list of dicts."
+
+    def _run(self, findings_json: str) -> str:
+        aggregator = FindingAggregator()
+        all_findings = []
+        try:
+            if findings_json.strip().startswith("["):
+                data = json.loads(findings_json)
+                for item in data:
+                    try:
+                        all_findings.append(ReviewFinding(**item))
+                    except:
+                        pass
+        except:
+            pass
+            
+        aggregated = aggregator.aggregate(all_findings)
+        return json.dumps([f.model_dump() for f in aggregated])

@@ -3,7 +3,7 @@ from textwrap import dedent
 from crewai import Agent
 from crewai_tools import Tool
 
-from tools import RadonTool, TreeSitterParser
+from tools import RadonTool, TreeSitterTool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -16,16 +16,7 @@ class PerformanceAgent:
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
-        self.radon = RadonTool()
         self.parser = TreeSitterParser()
-
-    def _complexity_wrapper(self, code: str) -> str:
-        findings = self.radon.analyze_complexity(code, "analyzed_file.py")
-        return str([f.model_dump() for f in findings])
-
-    def _structure_wrapper(self, code: str) -> str:
-        blocks = self.parser.parse_code(code, "analyzed_file.py")
-        return str([str(b) for b in blocks])
 
     def create(self) -> Agent:
         return Agent(
@@ -36,16 +27,8 @@ class PerformanceAgent:
                 You look for O(n^2) loops, inefficient list comprehensions, and high cyclomatic complexity.
                 You use Radon to measure complexity and your own intuition to spot algorithmic traps."""),
             tools=[
-                Tool(
-                    name="Radon Complexity Analysis",
-                    func=self._complexity_wrapper,
-                    description="Calculate Cyclomatic Complexity and Maintainability Index. Input is python code string. Use this to find complex functions."
-                ),
-                Tool(
-                    name="Code Structure Analysis",
-                    func=self._structure_wrapper,
-                    description="Extract code structure to identify nested loops and class hierarchy. Input is python code string."
-                )
+                RadonTool(),
+                TreeSitterTool()
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam

@@ -9,11 +9,6 @@ class ParseCodeTask:
         self.diff_parser = DiffParser()
         self.tree_parser = TreeSitterParser()
 
-    def _parse_diff_wrapper(self, diff_content: str) -> str:
-        files = self.diff_parser.parse_diff(diff_content)
-        # Convert to simple representation for the agent to validate
-        return str([{"file": f.filename, "hunks": len(f.hunks)} for f in files])
-
     def create(self, agent: Agent, diff_content: str, pr_details: dict) -> Task:
         return Task(
             description=dedent(f"""\
@@ -34,11 +29,7 @@ class ParseCodeTask:
             expected_output="A structured summary of files changed and their validity for review.",
             agent=agent,
             tools=[
-                Tool(
-                    name="Diff Parsing",
-                    func=self._parse_diff_wrapper,
-                    description="Parse PR diff to basic file stats. Input is diff string."
-                )
+                DiffParsingTool()
             ],
             context=[] # No previous context
         )

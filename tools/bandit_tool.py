@@ -14,22 +14,20 @@ from data.models import ReviewFinding
 
 logger = structlog.get_logger()
 
-class BanditTool:
-    """Wrapper around Bandit for security analysis."""
-    
-    def scan(self, code: str, filename: str) -> List[ReviewFinding]:
+from crewai_tools import BaseTool
+
+class BanditTool(BaseTool):
+    name: str = "Bandit Security Scan"
+    description: str = "Run Bandit security scan on python code. Input: python code string."
+
+    def _run(self, code: str) -> str:
         """
         Run bandit on code string.
-        
-        Args:
-            code: Python source code
-            filename: Virtual filename for reporting
-            
-        Returns:
-            List of ReviewFinding objects
+        returns: JSON string of findings
         """
+        filename = "analyzed_file.py"
         if not code.strip():
-            return []
+            return "[]"
             
         findings = []
         
@@ -40,8 +38,6 @@ class BanditTool:
             
         try:
             # Run bandit
-            # -f json: JSON output
-            # -q: quiet
             result = subprocess.run(
                 ["bandit", "-f", "json", "-q", tmp_path],
                 capture_output=True,
@@ -78,14 +74,14 @@ class BanditTool:
                     logger.warning("bandit_json_error", output=result.stdout)
                     
             logger.info("bandit_scan_complete", filename=filename, count=len(findings))
-            return findings
+            return str([f.model_dump() for f in findings])
             
         except subprocess.TimeoutExpired:
             logger.error("bandit_timeout", filename=filename)
-            return []
+            return "[]"
         except Exception as e:
             logger.error("bandit_error", filename=filename, error=str(e))
-            return []
+            return "[]"
         finally:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)

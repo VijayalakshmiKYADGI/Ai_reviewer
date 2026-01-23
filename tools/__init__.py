@@ -1,15 +1,18 @@
-from .tree_sitter_parser import TreeSitterParser
-from .pylint_tool import PylintTool  
+from .tree_sitter_parser import TreeSitterParser, TreeSitterTool
+from .pylint_tool import PylintTool
 from .bandit_tool import BanditTool
 from .radon_tool import RadonTool
-from .diff_parser import DiffParser
-from .finding_aggregator import FindingAggregator
+from .diff_parser import DiffParser, DiffParsingTool
+from .finding_aggregator import FindingAggregator, FindingAggregatorTool
 
 __all__ = [
     "TreeSitterParser",
+    "TreeSitterTool",
     "PylintTool",
     "BanditTool",
     "RadonTool",
     "DiffParser",
-    "FindingAggregator"
+    "DiffParsingTool",
+    "FindingAggregator",
+    "FindingAggregatorTool"
 ]

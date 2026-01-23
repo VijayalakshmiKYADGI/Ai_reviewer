@@ -3,7 +3,7 @@ from textwrap import dedent
 from crewai import Agent
 from crewai_tools import Tool
 
-from tools import PylintTool, TreeSitterParser
+from tools import PylintTool, TreeSitterTool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -16,18 +16,8 @@ class CodeQualityAgent:
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
-        self.pylint = PylintTool()
+        # Utility parser for internal logic if needed, but tool instances are separate
         self.parser = TreeSitterParser()
-
-    def _analyze_wrapper(self, code: str) -> str:
-        """Wrapper for Pylint tool to be used by CrewAI."""
-        findings = self.pylint.analyze(code, "analyzed_file.py")
-        return str([f.model_dump() for f in findings])
-
-    def _parse_wrapper(self, code: str) -> str:
-        """Wrapper for TreeSitter parser."""
-        blocks = self.parser.parse_code(code, "analyzed_file.py")
-        return str([str(b) for b in blocks])
 
     def create(self) -> Agent:
         return Agent(
@@ -39,16 +29,8 @@ class CodeQualityAgent:
                 You job is to read code, analyze it using the provided tools, and report every single style violation.
                 You do not tolerate messy imports, bad variable names, or missing docstrings."""),
             tools=[
-                Tool(
-                    name="Pylint Analysis",
-                    func=self._analyze_wrapper,
-                    description="Run Pylint on python code to find style issues and errors. Input should be the python code string."
-                ),
-                Tool(
-                    name="AST Parsing",
-                    func=self._parse_wrapper,
-                    description="Parse Python code into structural blocks (functions, classes) to understand code structure. Input is python code string."
-                )
+                PylintTool(),
+                TreeSitterTool()
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam
