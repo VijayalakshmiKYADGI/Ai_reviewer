@@ -49,7 +49,7 @@ class ReviewCrew:
         import os
         
         manager_llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-pro",
+            model="gemini-1.0-pro",  # Changed to a compatible model
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1
         )
