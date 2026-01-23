@@ -25,7 +25,7 @@ logger = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    VERSION = "v2.1.8-crewai-tools-fix"  # Update this with each deployment
+    VERSION = "v2.1.9-crewai-tools-fix"  # Update this with each deployment
     logger.info("startup_event", version=VERSION)
     logger.info("deployment_info", 
                 version=VERSION,

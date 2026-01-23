@@ -1,6 +1,5 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from crewai_tools import Tool
 from tools import FindingAggregator, FindingAggregatorTool
 from data.models import ReviewSummary, ReviewFinding
 import json
