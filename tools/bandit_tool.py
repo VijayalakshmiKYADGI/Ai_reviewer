@@ -14,7 +14,7 @@ from data.models import ReviewFinding
 
 logger = structlog.get_logger()
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 
 class BanditTool(BaseTool):
     name: str = "Bandit Security Scan"

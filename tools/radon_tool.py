@@ -13,7 +13,7 @@ from data.models import ReviewFinding
 
 logger = structlog.get_logger()
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 
 class RadonTool(BaseTool):
     name: str = "Radon Complexity Analysis"

@@ -98,7 +98,7 @@ class TreeSitterParser:
         blocks = self.parse_code(code, "memory")
         return [b for b in blocks if b.type == "function_definition"]
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 
 class TreeSitterTool(BaseTool):
     name: str = "AST Parsing"

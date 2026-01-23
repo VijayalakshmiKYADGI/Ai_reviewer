@@ -111,7 +111,7 @@ class DiffParser:
             return "markdown"
         return "unknown"
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 import json
 
 class DiffParsingTool(BaseTool):

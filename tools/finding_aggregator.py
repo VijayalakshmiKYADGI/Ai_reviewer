@@ -74,7 +74,7 @@ class FindingAggregator:
                 stats[f.severity] += 1
         return stats
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 import json
 
 class FindingAggregatorTool(BaseTool):

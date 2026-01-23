@@ -14,7 +14,7 @@ from data.models import ReviewFinding
 
 logger = structlog.get_logger()
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 
 class PylintTool(BaseTool):
     name: str = "Pylint Analysis"
