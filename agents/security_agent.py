@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 from crewai import Agent
 
-from tools import BanditTool, TreeSitterTool, TreeSitterParser
+from tools import bandit_tool, tree_sitter_tool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -27,12 +27,12 @@ class SecurityAgent:
                 You analyze code to ensure it is secure against common attacks.
                 You characterize risks as CRITICAL, HIGH, or MEDIUM."""),
             tools=[
-                BanditTool(),
-                TreeSitterTool()
+                bandit_tool,
+                tree_sitter_tool
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam
-            memory=True,
-            max_iter=2,
+            memory=False,
+            max_iter=10,
             allow_delegation=False
         )

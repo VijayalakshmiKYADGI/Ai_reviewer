@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from tools import FindingAggregator, FindingAggregatorTool
+from tools import FindingAggregator, finding_aggregator_tool
 from data.models import ReviewSummary, ReviewFinding
 import json
 
@@ -24,6 +24,6 @@ class AggregateFindingsTask:
             agent=agent,
             context=context_tasks,
             tools=[
-                FindingAggregatorTool()
+                finding_aggregator_tool
             ]
         )

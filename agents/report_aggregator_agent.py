@@ -27,6 +27,6 @@ class ReportAggregatorAgent:
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
-            max_iter=2,
+            max_iter=10,
             allow_delegation=False
         )

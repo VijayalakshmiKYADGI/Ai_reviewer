@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 from crewai import Agent
 
-from tools import TreeSitterTool, TreeSitterParser
+from tools import tree_sitter_tool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -27,11 +27,11 @@ class ArchitectureAgent:
                 You suggest design patterns (Factory, Observer, etc.) and architectural improvements.
                 You rely on code structure analysis to understand class relationships."""),
             tools=[
-                TreeSitterTool()
+                tree_sitter_tool
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
-            max_iter=2,
+            max_iter=10,
             allow_delegation=False
         )

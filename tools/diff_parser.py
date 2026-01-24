@@ -111,23 +111,21 @@ class DiffParser:
             return "markdown"
         return "unknown"
 
-from crewai.tools import BaseTool
+from langchain.tools import tool
 import json
 
-class DiffParsingTool(BaseTool):
-    name: str = "Diff Parsing"
-    description: str = "Parse PR diff to basic file stats. Input is diff string."
-
-    def _run(self, diff: str) -> str:
-        parser = DiffParser()
-        files = parser.parse_diff(diff)
-        # Convert to serializable dicts
-        result = []
-        for f in files:
-            result.append({
-                "filename": f.filename,
-                "language": f.language,
-                "hunks_count": len(f.hunks),
-                "full_content": f.full_content
-            })
-        return json.dumps(result)
+@tool("Diff Parsing")
+def diff_parsing_tool(diff: str) -> str:
+    """Parse PR diff to basic file stats. Input is diff string."""
+    parser = DiffParser()
+    files = parser.parse_diff(diff)
+    # Convert to serializable dicts
+    result = []
+    for f in files:
+        result.append({
+            "filename": f.filename,
+            "language": f.language,
+            "hunks_count": len(f.hunks),
+            "full_content": f.full_content
+        })
+    return json.dumps(result)

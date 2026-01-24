@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 from crewai import Agent
 
-from tools import PylintTool, TreeSitterTool, TreeSitterParser
+from tools import pylint_tool, tree_sitter_tool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -28,12 +28,12 @@ class CodeQualityAgent:
                 You job is to read code, analyze it using the provided tools, and report every single style violation.
                 You do not tolerate messy imports, bad variable names, or missing docstrings."""),
             tools=[
-                PylintTool(),
-                TreeSitterTool()
+                pylint_tool,
+                tree_sitter_tool
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam
-            memory=True,
-            max_iter=2,
+            memory=False,
+            max_iter=10,
             allow_delegation=False
         )
