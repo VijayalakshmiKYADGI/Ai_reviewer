@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 from crewai import Agent
 
-from tools import radon_tool, tree_sitter_tool, TreeSitterParser
+from tools import RadonTool, TreeSitterTool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
@@ -26,8 +26,8 @@ class PerformanceAgent:
                 You look for O(n^2) loops, inefficient list comprehensions, and high cyclomatic complexity.
                 You use Radon to measure complexity and your own intuition to spot algorithmic traps."""),
             tools=[
-                radon_tool,
-                tree_sitter_tool
+                RadonTool(),
+                TreeSitterTool()
             ],
             llm=self.llm,
             verbose=False,  # Disabled to reduce Railway log spam

@@ -1,6 +1,6 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from tools import DiffParser, TreeSitterParser, diff_parsing_tool
+from tools import DiffParser, TreeSitterParser, DiffParsingTool
 from data.models import ReviewInput
 
 class ParseCodeTask:
@@ -28,7 +28,7 @@ class ParseCodeTask:
             expected_output="A structured summary of files changed and their validity for review.",
             agent=agent,
             tools=[
-                diff_parsing_tool
+                DiffParsingTool()
             ],
             context=[] # No previous context
         )

@@ -34,9 +34,14 @@ try:
         # Check attributes safely
         max_iter = getattr(agent, 'max_iter', 'Unknown')
         print(f"Max Iter: {max_iter}")
+        print(f"Tools: {[t.name for t in agent.tools]}")
         
         # Verify fixes
         assert max_iter == 10, f"{name} max_iter should be 10, found {max_iter}"
+        assert len(agent.tools) > 0 or name == "ReportAggregator", f"{name} should have tools"
+        for tool in agent.tools:
+            # Check if tools are proper CrewAI tools
+            assert hasattr(tool, 'name'), f"Tool in {name} missing name"
         
         # Note: memory is often internal, if create() succeeded with memory=False, it's applied.
         

@@ -8,6 +8,7 @@ from tree_sitter import Language, Parser
 from dataclasses import dataclass
 from typing import Literal, Optional
 import structlog
+from crewai.agent import BaseTool
 
 logger = structlog.get_logger()
 
@@ -98,11 +99,11 @@ class TreeSitterParser:
         blocks = self.parse_code(code, "memory")
         return [b for b in blocks if b.type == "function_definition"]
 
-from langchain.tools import tool
+class TreeSitterTool(BaseTool):
+    name: str = "AST Parsing"
+    description: str = "Parse Python code into structural blocks (functions, classes). Input is python code string."
 
-@tool("AST Parsing")
-def tree_sitter_tool(code: str) -> str:
-    """Parse Python code into structural blocks (functions, classes). Input is python code string."""
-    parser = TreeSitterParser()
-    blocks = parser.parse_code(code, "analyzed_file.py")
-    return str([str(b) for b in blocks])
+    def _run(self, code: str) -> str:
+        parser = TreeSitterParser()
+        blocks = parser.parse_code(code, "analyzed_file.py")
+        return str([str(b) for b in blocks])
