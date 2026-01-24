@@ -36,37 +36,36 @@ class TaskGraph:
             pr_details=pr_details
         )
         
-        # 2. Parallel Analysis (conceptually parallel, but sequential list in CrewAI V1 unless async)
-        # We pass parse_task as context to all of them
+        # 2. Sequential Analysis using a Single Generalist Agent
+        # Combining experts into one agent severely reduces coordination overhead and 429 risks.
+        general_agent = agents["code_quality"]
+        
         quality_task = QualityAnalysisTask().create(
-            agent=agents["code_quality"],
+            agent=general_agent,
             context_tasks=[parse_task]
         )
         
         perf_task = PerformanceAnalysisTask().create(
-            agent=agents["performance"],
-            context_tasks=[parse_task] # Depends on Parsed Code
+            agent=general_agent,
+            context_tasks=[parse_task]
         )
         
         sec_task = SecurityAnalysisTask().create(
-            agent=agents["security"],
+            agent=general_agent,
             context_tasks=[parse_task]
         )
         
         arch_task = ArchitectureAnalysisTask().create(
-            agent=agents["architecture"],
+            agent=general_agent,
             context_tasks=[parse_task]
         )
         
-        # 3. Aggregation
-        # Depends on all analysis tasks
+        # 3. Aggregation and Formatting
         agg_task = AggregateFindingsTask().create(
             agent=agents["report_aggregator"],
             context_tasks=[quality_task, perf_task, sec_task, arch_task]
         )
         
-        # 4. Formatting
-        # Depends on Aggregation
         fmt_task = FormatCommentsTask().create(
             agent=agents["report_aggregator"],
             context_tasks=[agg_task]

@@ -24,16 +24,28 @@ class ReviewCrew:
     def assemble(self, diff_content: str, pr_details: dict):
         """Assemble agents and tasks for a specific review context."""
         
-        # 1. Get Agents
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        import os
+        
+        # 0. Shared LLM with global throttling
+        # We use a single instance to ensure agents share the same connection/pool
+        shared_llm = ChatGoogleGenerativeAI(
+            model=os.getenv("GEMINI_MODEL"),
+            google_api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.1,
+            max_retries=1
+        )
+
+        # 1. Get Agents (Passing shared LLM)
         # We instantiate fresh agents for each run in this design, 
         # or reuse registry if agents are stateless (they are mostly).
         # We need mapping for TaskGraph.
         agents = {
-            "code_quality": self.registry.get_agent_by_name("code_quality"),
-            "performance": self.registry.get_agent_by_name("performance"),
-            "security": self.registry.get_agent_by_name("security"),
-            "architecture": self.registry.get_agent_by_name("architecture"),
-            "report_aggregator": self.registry.get_agent_by_name("report_aggregator")
+            "code_quality": self.registry.get_agent_by_name("code_quality", llm=shared_llm),
+            "performance": self.registry.get_agent_by_name("performance", llm=shared_llm),
+            "security": self.registry.get_agent_by_name("security", llm=shared_llm),
+            "architecture": self.registry.get_agent_by_name("architecture", llm=shared_llm),
+            "report_aggregator": self.registry.get_agent_by_name("report_aggregator", llm=shared_llm)
         }
         
         # 2. Get Tasks
@@ -45,14 +57,6 @@ class ReviewCrew:
         
         # 3. Create Crew
         # Use official ChatGoogleGenerativeAI (compatible with CrewAI 0.51.1)
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        import os
-        
-        manager_llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GEMINI_MODEL"),  # Changed to a compatible model
-            google_api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=0.1
-        )
         
         self.crew = Crew(
             agents=list(agents.values()),
@@ -60,7 +64,7 @@ class ReviewCrew:
             process=Process.sequential,
             verbose=self.config.verbose,
             memory=self.config.enable_memory,
-            max_rpm=1  # Strictly limited to 1 RPM to survive Free Tier quotas
+            max_rpm=1  # Crew-level reinforcement of the RPM limit
         )
         
     def kickoff(self, review_input: ReviewInput) -> GitHubReview:

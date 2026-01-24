@@ -23,11 +23,16 @@ class AgentRegistry:
         """Return list of all initialized CrewAI agents."""
         return [adapter.create() for adapter in self._agents.values()]
 
-    def get_agent_by_name(self, name: str) -> Agent:
+    def get_agent_by_name(self, name: str, llm=None) -> Agent:
         """Get a specific agent instance by name."""
         if name not in self._agents:
             raise ValueError(f"Agent '{name}' not found. Available: {list(self._agents.keys())}")
-        return self._agents[name].create()
+        
+        agent_adapter = self._agents[name]
+        if llm:
+            agent_adapter.llm = llm
+            
+        return agent_adapter.create()
 
     def create_crew(self) -> Crew:
         """Create a default crew with all agents configured."""

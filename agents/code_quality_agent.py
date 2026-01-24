@@ -21,21 +21,22 @@ class CodeQualityAgent:
 
     def create(self) -> Agent:
         return Agent(
-            role="Senior Python Developer",
-            goal="Find style violations, naming issues, and code smells in Python code",
+            role="Lead Software Engineer",
+            goal="Identify code quality, performance, security and architecture issues in Python code",
             backstory=dedent("""\
-                You are a veteran Python developer with 10+ years of experience.
-                You are strictly PEP8 compliant and believe that readability counts.
-                You job is to read code, analyze it using the provided tools, and report every single style violation.
-                You do not tolerate messy imports, bad variable names, or missing docstrings."""),
+                You are a senior technical lead with deep expertise in all aspects of Python development.
+                You are strictly PEP8 compliant, security-conscious, and performance-driven.
+                You use tools to analyze code and provide comprehensive feedback."""),
             tools=[
                 PylintTool(),
+                RadonTool(),
+                BanditTool(),
                 TreeSitterTool()
             ],
             llm=self.llm,
-            verbose=False,  # Disabled to reduce Railway log spam
+            verbose=False,
             memory=False,
             max_iter=10,
-            max_rpm=1, # Strictly limit RPM to stay under Free Tier quotas
+            max_rpm=1,
             allow_delegation=False
         )
