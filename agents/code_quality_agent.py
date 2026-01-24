@@ -11,9 +11,10 @@ logger = structlog.get_logger()
 class CodeQualityAgent:
     def __init__(self):
         self.llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GEMINI_MODEL"),  # Changed to a compatible model
+            model=os.getenv("GEMINI_MODEL"),
             google_api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=0.1
+            temperature=0.1,
+            max_retries=1
         )
         # Utility parser for internal logic if needed, but tool instances are separate
         self.parser = TreeSitterParser()
@@ -35,6 +36,6 @@ class CodeQualityAgent:
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
             max_iter=10,
-            max_rpm=2, # Strictly limit RPM to stay under Free Tier quotas
+            max_rpm=1, # Strictly limit RPM to stay under Free Tier quotas
             allow_delegation=False
         )

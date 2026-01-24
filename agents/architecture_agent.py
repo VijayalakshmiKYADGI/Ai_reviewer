@@ -11,9 +11,10 @@ logger = structlog.get_logger()
 class ArchitectureAgent:
     def __init__(self):
         self.llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GEMINI_MODEL"),  # Changed to a compatible model
+            model=os.getenv("GEMINI_MODEL"),
             google_api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=0.1
+            temperature=0.1,
+            max_retries=1
         )
         self.parser = TreeSitterParser()
 
@@ -33,6 +34,6 @@ class ArchitectureAgent:
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
             max_iter=10,
-            max_rpm=2,
+            max_rpm=1,
             allow_delegation=False
         )

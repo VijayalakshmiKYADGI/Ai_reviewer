@@ -60,8 +60,7 @@ class ReviewCrew:
             process=Process.sequential,
             verbose=self.config.verbose,
             memory=self.config.enable_memory,
-            manager_llm=manager_llm,
-            max_rpm=2  # Lowered to 2 to be extremely safe on Free Tier
+            max_rpm=1  # Strictly limited to 1 RPM to survive Free Tier quotas
         )
         
     def kickoff(self, review_input: ReviewInput) -> GitHubReview:

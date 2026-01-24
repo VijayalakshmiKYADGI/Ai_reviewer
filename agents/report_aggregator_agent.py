@@ -9,9 +9,10 @@ logger = structlog.get_logger()
 class ReportAggregatorAgent:
     def __init__(self):
         self.llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GEMINI_MODEL"),  # Changed to a compatible model
+            model=os.getenv("GEMINI_MODEL"),
             google_api_key=os.getenv("GEMINI_API_KEY"),
-            temperature=0.3
+            temperature=0.3,
+            max_retries=1 # Prevent "burst" retries hitting quotas
         )
 
     def create(self) -> Agent:
@@ -28,5 +29,6 @@ class ReportAggregatorAgent:
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
             max_iter=10,
+            max_rpm=1, # Extremely strict to save quota
             allow_delegation=False
         )
