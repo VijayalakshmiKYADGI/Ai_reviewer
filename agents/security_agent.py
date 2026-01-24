@@ -34,5 +34,6 @@ class SecurityAgent:
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
             max_iter=10,
+            max_rpm=2,
             allow_delegation=False
         )

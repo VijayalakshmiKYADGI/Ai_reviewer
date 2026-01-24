@@ -35,5 +35,6 @@ class CodeQualityAgent:
             verbose=False,  # Disabled to reduce Railway log spam
             memory=False,
             max_iter=10,
+            max_rpm=2, # Strictly limit RPM to stay under Free Tier quotas
             allow_delegation=False
         )

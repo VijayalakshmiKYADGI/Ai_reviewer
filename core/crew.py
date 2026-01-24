@@ -61,7 +61,7 @@ class ReviewCrew:
             verbose=self.config.verbose,
             memory=self.config.enable_memory,
             manager_llm=manager_llm,
-            max_rpm=10  # Added to prevent 429 Rate Limit errors on Free Tier
+            max_rpm=2  # Lowered to 2 to be extremely safe on Free Tier
         )
         
     def kickoff(self, review_input: ReviewInput) -> GitHubReview:
