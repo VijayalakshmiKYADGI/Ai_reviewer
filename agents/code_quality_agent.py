@@ -2,7 +2,7 @@ import os
 from textwrap import dedent
 from crewai import Agent
 
-from tools import PylintTool, TreeSitterTool, TreeSitterParser
+from tools import PylintTool, RadonTool, BanditTool, TreeSitterTool, TreeSitterParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 import structlog
 
