@@ -74,21 +74,32 @@ class GitHubCommenter:
     
     def _format_summary(self, github_review: GitHubReview) -> str:
         """Format the high-level summary for the review."""
-        status_emoji = "✅" if github_review.review_state == "APPROVED" else "⚠️"
-        if github_review.review_state == "REQUESTED_CHANGES":
+        review_state = getattr(github_review, "review_state", "COMMENTED")
+        status_emoji = "✅" if review_state == "APPROVED" else "⚠️"
+        if review_state == "REQUESTED_CHANGES":
             status_emoji = "❌"
             
-        return f"## 🤖 AI Code Review Summary {status_emoji}\n\n{github_review.summary_comment}\n\n---\n*Sent by CrewAI Lead Engineer*"
+        summary_text = getattr(github_review, "summary_comment", "Review completed check findings below.")
+        return f"## 🤖 AI Code Review Summary {status_emoji}\n\n{summary_text}\n\n---\n*Sent by CrewAI Lead Engineer*"
 
-    def _format_comment(self, comment: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_comment(self, comment: Any) -> Dict[str, Any]:
         """Format an individual inline comment for the GitHub API."""
-        body = comment.get("comment", comment.get("body", ""))
+        # Handle both object and dict access for robustness
+        def safe_get(obj, attr, default=""):
+            if isinstance(obj, dict):
+                return obj.get(attr, default)
+            return getattr(obj, attr, default)
+
+        body = safe_get(comment, "comment", safe_get(comment, "body", ""))
         # Add severity prefix if not present
         formatted_body = self._format_comment_body({"body": body})
         
+        path = safe_get(comment, "file_path", safe_get(comment, "path", "unknown"))
+        line = safe_get(comment, "line_number", safe_get(comment, "line", 0))
+        
         return {
-            "path": comment.get("file_path", comment.get("path", "")),
-            "line": int(comment.get("line_number", comment.get("line", 0))),
+            "path": str(path) if path else "unknown",
+            "line": int(line) if line else 0,
             "body": formatted_body
         }
 

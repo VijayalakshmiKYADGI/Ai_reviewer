@@ -4,32 +4,20 @@ Provides validation and serialization for agent outputs and review summaries.
 """
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class ReviewFinding(BaseModel):
     """
     Represents a single code review finding from an agent.
-    
-    Example:
-        {
-            "severity": "HIGH",
-            "agent_name": "security",
-            "file_path": "src/auth.py",
-            "line_number": 42,
-            "code_block": "password = request.args.get('pwd')",
-            "issue_description": "Password transmitted in URL query parameters",
-            "fix_suggestion": "Use POST request with encrypted body",
-            "category": "security"
-        }
     """
     severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     agent_name: str
-    file_path: str
-    line_number: Optional[int] = None
+    file_path: Optional[str] = None
+    line_number: Optional[Union[int, str]] = None
     code_block: Optional[str] = None
-    issue_description: str = Field(..., min_length=10)
+    issue_description: str = Field(...)
     fix_suggestion: Optional[str] = None
     category: str
     

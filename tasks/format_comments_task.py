@@ -1,14 +1,16 @@
 from textwrap import dedent
 from crewai import Task, Agent
-from typing import List, Literal, Optional, Dict
-from pydantic import BaseModel, Field
+from typing import List, Literal, Optional, Dict, Union
 
-# Define Output Model locally to avoid data package edit if restricted, 
-# but ideally should be shared.
+class InlineComment(BaseModel):
+    file_path: Optional[str] = Field(None, description="Path to the file being reviewed")
+    line_number: Optional[Union[int, str]] = Field(None, description="Line number in the file")
+    comment: str = Field(..., description="The review comment text")
+
 class GitHubReview(BaseModel):
-    inline_comments: List[Dict[str, str]] = Field(description="List of comments with path, line, body")
-    summary_comment: str
-    review_state: Literal["COMMENTED", "APPROVED", "REQUESTED_CHANGES"]
+    inline_comments: List[InlineComment] = Field(default_factory=list, description="List of inline comments")
+    summary_comment: str = Field(..., description="Overall summary of the review")
+    review_state: str = Field(..., description="Review state: APPROVED, REQUEST_CHANGES, or COMMENTED")
 
 class FormatCommentsTask:
     def create(self, agent: Agent, context_tasks: list[Task]) -> Task:
@@ -16,17 +18,30 @@ class FormatCommentsTask:
             description=dedent("""\
                 Format the aggregated findings into a GitHub Pull Request review.
                 
+                STEPS:
                 1. Create inline_comments for specific lines of code.
                 2. Create a high-level summary_comment.
                 3. Determine review_state:
-                   - REQUESTED_CHANGES if any CRITICAL/HIGH issues.
+                   - REQUESTED_CHANGES if any CRITICAL/HIGH issues and return that state.
                    - COMMENTED if only MEDIUM/LOW issues.
                    - APPROVED if no findings.
                    
-                Format exactly as the GitHubReview schema.
+                IMPORTANT:
+                - EVERY comment must have 'file_path', 'line_number', and 'comment'.
+                - If a path is unknown, use 'README.md' or the main file found in context.
+                - 'line_number' MUST be an integer or a string.
+                - Format the result as valid JSON.
             """),
-            expected_output="A GitHubReview JSON object with inline_comments, summary_comment, and review_state.",
+            expected_output=dedent("""\
+                A JSON object with exactly this structure:
+                {
+                  "inline_comments": [
+                    {"file_path": "string", "line_number": 1, "comment": "string"}
+                  ],
+                  "summary_comment": "string",
+                  "review_state": "APPROVED|REQUEST_CHANGES|COMMENTED"
+                }
+            """),
             agent=agent,
-            context=context_tasks,
-            output_pydantic=GitHubReview # Force Pydantic output if supported by version
+            context=context_tasks
         )
