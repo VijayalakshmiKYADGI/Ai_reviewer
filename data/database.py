@@ -99,7 +99,7 @@ def save_review(review_summary: ReviewSummary) -> int:
         severity_counts = review_summary.severity_counts
         
         cursor.execute("""
-            INSERT INTO reviews (
+            INSERT OR REPLACE INTO reviews (
                 repo_name, pr_number, pr_url, status,
                 total_findings, severity_high, severity_medium, severity_low,
                 execution_time_seconds, total_cost_usd, created_at, completed_at

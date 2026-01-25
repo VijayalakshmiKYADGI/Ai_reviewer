@@ -72,48 +72,26 @@ class GitHubCommenter:
         # Phase 9 will implement proper diff parsing
         return line_number
     
-    async def post_review(
-        self,
-        repo_full_name: str,
-        pr_number: int,
-        github_review: GitHubReview
-    ) -> str:
-        """
-        Post a complete code review to GitHub PR.
+    def _format_summary(self, github_review: GitHubReview) -> str:
+        """Format the high-level summary for the review."""
+        status_emoji = "✅" if github_review.review_state == "APPROVED" else "⚠️"
+        if github_review.review_state == "REQUESTED_CHANGES":
+            status_emoji = "❌"
+            
+        return f"## 🤖 AI Code Review Summary {status_emoji}\n\n{github_review.summary_comment}\n\n---\n*Sent by CrewAI Lead Engineer*"
+
+    def _format_comment(self, comment: Dict[str, Any]) -> Dict[str, Any]:
+        """Format an individual inline comment for the GitHub API."""
+        body = comment.get("comment", comment.get("body", ""))
+        # Add severity prefix if not present
+        formatted_body = self._format_comment_body({"body": body})
         
-        Args:
-            repo_full_name: Full repo name (owner/repo)
-            pr_number: PR number
-            github_review: GitHubReview object from CrewAI pipeline
-            
-        Returns:
-            Review ID
-            
-        Example:
-            >>> commenter = GitHubCommenter()
-            >>> review = GitHubReview(
-            ...     inline_comments=[{"path": "app.py", "line": 42, "body": "Fix this"}],
-            ...     summary_comment="Great work!",
-            ...     review_state="COMMENTED"
-            ... )
-            >>> review_id = await commenter.post_review("owner/repo", 1, review)
-        """
-        # Format inline comments for GitHub API
-        formatted_comments = []
-        
-        for comment in github_review.inline_comments:
-            # Extract comment data
-            path = comment.get("path", "")
-            line = int(comment.get("line", 0))
-            body = comment.get("body", "")
-            
-            if not path or not line or not body:
-                print(f"Skipping invalid comment: {comment}")
-                continue
-            
-            # Format comment body with emoji
-            formatted_body = self._format_comment_body(comment)
-            
+        return {
+            "path": comment.get("file_path", comment.get("path", "")),
+            "line": int(comment.get("line_number", comment.get("line", 0))),
+            "body": formatted_body
+        }
+
     async def post_review(
         self,
         repo_full_name: str,
@@ -123,35 +101,41 @@ class GitHubCommenter:
         event: str = "COMMENT"
     ) -> str:
         """
-        Post a review to GitHub.
-
+        Post a complete code review to GitHub PR.
+        
         Args:
             repo_full_name: Full repo name (owner/repo)
             pr_number: PR number
-            github_review: GitHubReview object
-            valid_paths: Optional list of valid file paths in the PR diff
-            event: Review event type (APPROVE, REQUEST_CHANGES, COMMENT)
-
+            github_review: GitHubReview object from CrewAI pipeline
+            valid_paths: List of allowed file paths
+            event: GitHub review event (COMMENT, REQUEST_CHANGES, APPROVE)
+            
         Returns:
             Review ID
         """
-        # Format comments
+        # 1. Format the summary
         summary = self._format_summary(github_review)
-        formatted_comments = []
         
+        # 2. Format inline comments
+        formatted_comments = []
         for comment in github_review.inline_comments:
-            path = comment.get("path")
-            # validate path if valid_paths provided
+            path = comment.get("file_path", comment.get("path", ""))
+            
+            # Filter comments for files that actually exist in the diff
             if valid_paths is not None and path not in valid_paths:
                 print(f"⚠️ Skipping comment for invalid path: {path}")
-                # Append to summary instead
-                summary += f"\n\n**Note on {path}:{comment.get('line')}**: {comment.get('body')}"
                 continue
                 
             formatted_comments.append(self._format_comment(comment))
         
-        # Post review via GitHub API
+        # 3. Post review via GitHub API
         try:
+            # Determine correct event (override 'COMMENT' if results are critical)
+            if github_review.review_state == "REQUESTED_CHANGES":
+                event = "REQUEST_CHANGES"
+            elif github_review.review_state == "APPROVED":
+                event = "APPROVE"
+
             review_id = await self.client.create_review(
                 repo=repo_full_name,
                 pr_number=pr_number,
@@ -161,18 +145,13 @@ class GitHubCommenter:
             )
             
             print(f"✅ Posted review to {repo_full_name}#{pr_number} (Review ID: {review_id})")
-            return review_id
+            return str(review_id)
         
         except Exception as e:
-            # Handle 422 "line not in diff" errors
+            # Handle 422 "line not in diff" errors by falling back to PR comment
             if "422" in str(e) or "Unprocessable Entity" in str(e):
-                print(f"⚠️ Inline comments failed (422), falling back to PR comment")
-                # Fallback: Post as single PR comment
-                return await self._post_as_pr_comment(
-                    repo_full_name,
-                    pr_number,
-                    github_review
-                )
+                print(f"⚠️ Inline comments failed (422), falling back to single PR comment")
+                return await self._post_as_pr_comment(repo_full_name, pr_number, github_review)
             else:
                 print(f"❌ Failed to post review: {e}")
                 raise
