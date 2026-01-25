@@ -33,7 +33,8 @@ class ReviewCrew:
             model=os.getenv("GEMINI_MODEL"),
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1,
-            max_retries=1
+            max_retries=1,
+            max_output_tokens=2048
         )
 
         # 1. Get Agents (Passing shared LLM)

@@ -17,32 +17,19 @@ class FormatCommentsTask:
     def create(self, agent: Agent, context_tasks: list[Task]) -> Task:
         return Task(
             description=dedent("""\
-                Format the aggregated findings into a GitHub Pull Request review.
+                Format findings into a GitHub PR review JSON. 
                 
                 STEPS:
-                1. Create inline_comments for specific lines of code.
-                2. Create a high-level summary_comment.
-                3. Determine review_state:
-                   - REQUESTED_CHANGES if any CRITICAL/HIGH issues and return that state.
-                   - COMMENTED if only MEDIUM/LOW issues.
-                   - APPROVED if no findings.
+                1. Create 'inline_comments' (file_path, line_number, comment).
+                2. Create 'summary_comment' (Brief overview of main issues).
+                3. Set 'review_state' (REQUESTED_CHANGES if findings exist, else APPROVED).
                    
-                IMPORTANT:
-                - EVERY comment must have 'file_path', 'line_number', and 'comment'.
-                - If a path is unknown, use 'README.md' or the main file found in context.
-                - 'line_number' MUST be an integer or a string.
-                - Format the result as valid JSON.
+                FORBIDDEN:
+                - Do NOT include markdown code blocks (```json).
+                - Do NOT include any text outside the JSON object.
+                - Keep the summary_comment brief.
             """),
-            expected_output=dedent("""\
-                A JSON object with exactly this structure:
-                {
-                  "inline_comments": [
-                    {"file_path": "string", "line_number": 1, "comment": "string"}
-                  ],
-                  "summary_comment": "string",
-                  "review_state": "APPROVED|REQUEST_CHANGES|COMMENTED"
-                }
-            """),
+            expected_output='A raw string containing only a JSON object: {"inline_comments": [...], "summary_comment": "...", "review_state": "..."}',
             agent=agent,
             context=context_tasks
         )
