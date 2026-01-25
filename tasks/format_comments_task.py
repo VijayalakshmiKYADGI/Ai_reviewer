@@ -1,6 +1,7 @@
 from textwrap import dedent
 from crewai import Task, Agent
 from typing import List, Literal, Optional, Dict, Union
+from pydantic import BaseModel, Field
 
 class InlineComment(BaseModel):
     file_path: Optional[str] = Field(None, description="Path to the file being reviewed")
