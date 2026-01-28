@@ -14,11 +14,11 @@ class ReviewFinding(BaseModel):
     """
     severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     agent_name: str
-    file_path: Optional[str] = None
-    line_number: Optional[int] = None
-    code_block: Optional[str] = None
+    file_path: str = Field("unknown", description="Path to the file")
+    line_number: int = Field(1, description="Line number")
+    code_block: str = Field("", description="Relevant code snippet")
     issue_description: str = Field(...)
-    fix_suggestion: Optional[str] = None
+    fix_suggestion: str = Field("", description="Suggested fix")
     category: str
     
     model_config = ConfigDict(from_attributes=True)
@@ -129,8 +129,8 @@ class ComprehensiveReviewAnalysis(BaseModel):
 
 class InlineComment(BaseModel):
     """Represents a single inline comment on a file."""
-    file_path: Optional[str] = Field(None, description="Path to the file being reviewed")
-    line_number: Optional[int] = Field(None, description="Line number in the file")
+    file_path: str = Field("unknown", description="Path to the file being reviewed")
+    line_number: int = Field(1, description="Line number in the file")
     comment: str = Field(..., description="The review comment text")
 
 class GitHubReview(BaseModel):

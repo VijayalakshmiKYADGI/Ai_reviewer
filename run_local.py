@@ -56,8 +56,11 @@ async def run_local_review(repo_name: str, pr_number: int):
     print(f"FINDINGS: {len(result.inline_comments)}")
     
     # 7. Post to GitHub?
-    choice = input("\nDo you want to post these results to GitHub? (y/n): ")
-    if choice.lower() == 'y':
+    # Use run_in_executor to avoid blocking the event loop or skipping input
+    loop = asyncio.get_running_loop()
+    choice = await loop.run_in_executor(None, input, "\nDo you want to post these results to GitHub? (y/n): ")
+    
+    if choice.strip().lower() == 'y':
         valid_paths = [f.filename for f in pr_info.files_changed]
         await commenter.post_review(repo_name, pr_number, result, valid_paths=valid_paths)
         print("✨ Posted to GitHub successfully!")

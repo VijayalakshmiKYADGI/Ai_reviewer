@@ -87,8 +87,20 @@ class GitHubCommenter:
         # Handle both object and dict access for robustness
         def safe_get(obj, attr, default=""):
             if isinstance(obj, dict):
-                return obj.get(attr, default)
-            return getattr(obj, attr, default)
+                val = obj.get(attr)
+            else:
+                val = getattr(obj, attr, None)
+            
+            # If value is None, try aliases
+            if val is None:
+                if attr == "file_path": val = safe_get(obj, "path", None)
+                if attr == "path": val = safe_get(obj, "file_path", None)
+                if attr == "line_number": val = safe_get(obj, "line", None)
+                if attr == "line": val = safe_get(obj, "line_number", None)
+                if attr == "comment": val = safe_get(obj, "body", None)
+                if attr == "body": val = safe_get(obj, "comment", None)
+                
+            return val if val is not None else default
 
         body = safe_get(comment, "comment", safe_get(comment, "body", ""))
         # Add severity prefix if not present
@@ -99,7 +111,7 @@ class GitHubCommenter:
         
         return {
             "path": str(path) if path else "unknown",
-            "line": int(line) if line else 0,
+            "line": int(line) if line else 1,
             "body": formatted_body
         }
 
@@ -239,10 +251,16 @@ class GitHubCommenter:
 """
         
         for i, comment in enumerate(github_review.inline_comments, 1):
-            path = comment.get("path", "unknown")
-            line = comment.get("line", 0)
-            body = comment.get("body", "")
-            formatted_body = self._format_comment_body(comment)
+            # Safe access helper
+            def safe_val(obj, attr, default):
+                if isinstance(obj, dict): return obj.get(attr, default)
+                return getattr(obj, attr, default)
+
+            path = safe_val(comment, "file_path", safe_val(comment, "path", "unknown"))
+            line = safe_val(comment, "line_number", safe_val(comment, "line", 1))
+            body = safe_val(comment, "comment", safe_val(comment, "body", ""))
+            
+            formatted_body = self._format_comment_body({"body": body})
             
             comment_body += f"{i}. **`{path}:L{line}`** - {formatted_body}\n"
         
