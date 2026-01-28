@@ -14,6 +14,8 @@ from github_integration.client import GitHubClient
 from core.execution import execute_review_pipeline
 from github_integration.commenter import GitHubCommenter
 
+#python run_local.py "VijayalakshmiKYADGI/test" 1
+
 async def run_local_review(repo_name: str, pr_number: int):
     """Run a full review pipeline locally."""
     # 1. Load environment
