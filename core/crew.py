@@ -3,8 +3,7 @@ import structlog
 from crewai import Crew, Process
 from agents.agent_registry import AgentRegistry
 from tasks.task_graph import TaskGraph
-from tasks.format_comments_task import GitHubReview
-from data.models import ReviewInput
+from data.models import ReviewInput, GitHubReview
 from core.config import ReviewConfig
 
 logger = structlog.get_logger()
@@ -34,18 +33,12 @@ class ReviewCrew:
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=0.1,
             max_retries=1,
-            max_output_tokens=2048
+            max_output_tokens=4096
         )
 
         # 1. Get Agents (Passing shared LLM)
-        # We instantiate fresh agents for each run in this design, 
-        # or reuse registry if agents are stateless (they are mostly).
-        # We need mapping for TaskGraph.
         agents = {
-            "code_quality": self.registry.get_agent_by_name("code_quality", llm=shared_llm),
-            "performance": self.registry.get_agent_by_name("performance", llm=shared_llm),
-            "security": self.registry.get_agent_by_name("security", llm=shared_llm),
-            "architecture": self.registry.get_agent_by_name("architecture", llm=shared_llm),
+            "comprehensive": self.registry.get_agent_by_name("comprehensive", llm=shared_llm),
             "report_aggregator": self.registry.get_agent_by_name("report_aggregator", llm=shared_llm)
         }
         
@@ -57,15 +50,13 @@ class ReviewCrew:
         )
         
         # 3. Create Crew
-        # Use official ChatGoogleGenerativeAI (compatible with CrewAI 0.51.1)
-        
         self.crew = Crew(
             agents=list(agents.values()),
             tasks=tasks,
             process=Process.sequential,
             verbose=self.config.verbose,
-            memory=self.config.enable_memory,
-            max_rpm=1  # Crew-level reinforcement of the RPM limit
+            memory=False, # FORCED FALSE to avoid OPENAI_API_KEY requirement
+            max_rpm=10
         )
         
     def kickoff(self, review_input: ReviewInput) -> GitHubReview:
@@ -101,20 +92,25 @@ class ReviewCrew:
             # We handle potential wrapping.
             
             if hasattr(result, "pydantic") and result.pydantic:
+                 logger.info("crew_result_extracted_pydantic", model=type(result.pydantic).__name__)
                  return result.pydantic
             
-            if hasattr(result, "raw"):
-                # Try to parse if raw string
-                # Or if result itself is the object (CrewAI sometimes returns the model instance directly)
-                pass
-            
-            # If it's already the model
             if isinstance(result, GitHubReview):
+                logger.info("crew_result_direct_model")
                 return result
 
-            # If dict/string, try to coerce (fallback)
-            # In Phase 5, FormatCommentsTask uses `output_pydantic=GitHubReview`
-            # So CrewAI should return the model instance.
+            # If it's a TaskOutput but for some reason pydantic is None, 
+            # try to parse the raw string as a fallback
+            if hasattr(result, "raw") and result.raw:
+                try:
+                    import json
+                    logger.info("crew_result_parsing_raw")
+                    data = json.loads(result.raw)
+                    return GitHubReview(**data)
+                except:
+                    logger.warning("crew_result_parse_failed")
+                    pass
+
             return result 
 
         except Exception as e:

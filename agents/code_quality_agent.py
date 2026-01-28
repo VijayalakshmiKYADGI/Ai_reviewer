@@ -37,6 +37,6 @@ class CodeQualityAgent:
             verbose=False,
             memory=False,
             max_iter=10,
-            max_rpm=1,
+            max_rpm=10,
             allow_delegation=False
         )

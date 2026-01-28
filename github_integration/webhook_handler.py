@@ -16,8 +16,7 @@ import structlog
 from .pr_fetcher import PRFetcher, PRData
 from .commenter import GitHubCommenter
 from .client import GitHubClient
-from tasks.format_comments_task import GitHubReview
-from data.models import ReviewInput
+from data.models import ReviewInput, GitHubReview
 
 logger = structlog.get_logger()
 

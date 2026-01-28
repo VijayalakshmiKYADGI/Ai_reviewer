@@ -1,9 +1,8 @@
 from typing import List, Optional
 import structlog
-from datetime import datetime
-from data.models import ReviewInput, ReviewSummary, AgentOutput, ReviewFinding
+from datetime import datetime, timezone
+from data.models import ReviewInput, ReviewSummary, AgentOutput, ReviewFinding, GitHubReview
 from data.database import save_review, get_review_by_id
-from tasks.format_comments_task import GitHubReview
 
 logger = structlog.get_logger()
 
@@ -19,7 +18,7 @@ def save_review_start(review_input: ReviewInput) -> int:
         pr_url=f"https://github.com/{review_input.repo_name}/pull/{review_input.pr_number}", # approximate
         status="running",
         agent_outputs=[],
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
     return save_review(summary)
 
@@ -48,7 +47,7 @@ def save_full_review_results(
             status="completed",
             agent_outputs=agent_outputs,
             execution_time=execution_time,
-            completed_at=datetime.utcnow()
+            completed_at=datetime.now(timezone.utc)
         )
         
         # Save (this will update or re-insert depending on DB logic, 

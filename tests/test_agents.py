@@ -19,6 +19,7 @@ from agents import (
     SecurityAgent,
     ArchitectureAgent,
     ReportAggregatorAgent,
+    ComprehensiveReviewAgent,
     AgentRegistry
 )
 
@@ -27,12 +28,15 @@ def test_agent_registry():
     registry = AgentRegistry()
     agents = registry.get_all_agents()
     
-    assert len(agents) == 5
+    assert len(agents) == 6 # Quality, Perf, Sec, Arch, Aggregator, Comprehensive
     assert all(isinstance(a, Agent) for a in agents)
     
     # Check specific retrieval
     security = registry.get_agent_by_name("security")
     assert security.role == "Application Security Engineer"
+    
+    comprehensive = registry.get_agent_by_name("comprehensive")
+    assert comprehensive.role == "Lead Software Engineer"
 
 def test_code_quality_agent():
     """Test CodeQualityAgent configuration."""
@@ -84,6 +88,15 @@ def test_report_aggregator_agent():
     assert agent.role == "Technical Report Writer"
     assert len(agent.tools) == 0 # Pure reasoning
 
+def test_comprehensive_agent():
+    """Test ComprehensiveReviewAgent configuration."""
+    agent_adapter = ComprehensiveReviewAgent()
+    agent = agent_adapter.create()
+    
+    assert agent.role == "Lead Software Engineer"
+    assert agent.memory is False
+    assert agent.max_iter == 3
+
 def test_agent_llm_config():
     """Test LLM configuration for agents."""
     agent = CodeQualityAgent().create()
@@ -109,7 +122,7 @@ def test_crew_assembly():
     crew = registry.create_crew()
     
     assert isinstance(crew, Crew)
-    assert len(crew.agents) == 5
+    assert len(crew.agents) == 6
 
 def test_tool_execution():
     """Use tool directly via agent wrapper to verify it runs."""

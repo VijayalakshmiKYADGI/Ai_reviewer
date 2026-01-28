@@ -7,7 +7,7 @@ Formats and posts code review comments with severity indicators.
 from typing import Dict, Any, List, Optional
 import structlog
 from datetime import datetime
-from tasks.format_comments_task import GitHubReview
+from data.models import GitHubReview
 from .client import GitHubClient
 
 
@@ -130,7 +130,7 @@ class GitHubCommenter:
         # 2. Format inline comments
         formatted_comments = []
         for comment in github_review.inline_comments:
-            path = comment.get("file_path", comment.get("path", ""))
+            path = getattr(comment, "file_path", getattr(comment, "path", ""))
             
             # Filter comments for files that actually exist in the diff
             if valid_paths is not None and path not in valid_paths:

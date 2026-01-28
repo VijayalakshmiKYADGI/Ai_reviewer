@@ -3,7 +3,7 @@ Pydantic models for code review data structures.
 Provides validation and serialization for agent outputs and review summaries.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Optional, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
@@ -15,7 +15,7 @@ class ReviewFinding(BaseModel):
     severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     agent_name: str
     file_path: Optional[str] = None
-    line_number: Optional[Union[int, str]] = None
+    line_number: Optional[int] = None
     code_block: Optional[str] = None
     issue_description: str = Field(...)
     fix_suggestion: Optional[str] = None
@@ -72,7 +72,7 @@ class ReviewSummary(BaseModel):
     agent_outputs: list[AgentOutput] = Field(default_factory=list)
     execution_time: float = 0.0
     total_cost: float = 0.0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
@@ -122,3 +122,19 @@ class ReviewInput(BaseModel):
         if not v or not v.strip():
             raise ValueError("diff_content cannot be empty")
         return v
+
+class ComprehensiveReviewAnalysis(BaseModel):
+    """Container for the multi-agent consolidated analysis."""
+    findings: list[ReviewFinding] = Field(..., description="List of all detected issues")
+
+class InlineComment(BaseModel):
+    """Represents a single inline comment on a file."""
+    file_path: Optional[str] = Field(None, description="Path to the file being reviewed")
+    line_number: Optional[int] = Field(None, description="Line number in the file")
+    comment: str = Field(..., description="The review comment text")
+
+class GitHubReview(BaseModel):
+    """Represents the final review to be posted to GitHub."""
+    inline_comments: list[InlineComment] = Field(default_factory=list, description="List of inline comments")
+    summary_comment: str = Field(..., description="Overall summary of the review")
+    review_state: str = Field(..., description="Review state: APPROVED, REQUEST_CHANGES, or COMMENTED")

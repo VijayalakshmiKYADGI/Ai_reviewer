@@ -6,6 +6,7 @@ from .performance_agent import PerformanceAgent
 from .security_agent import SecurityAgent
 from .architecture_agent import ArchitectureAgent
 from .report_aggregator_agent import ReportAggregatorAgent
+from .comprehensive_agent import ComprehensiveReviewAgent
 
 class AgentRegistry:
     """Registry to manage and retrieve CrewAI agents."""
@@ -16,7 +17,8 @@ class AgentRegistry:
             "performance": PerformanceAgent(),
             "security": SecurityAgent(),
             "architecture": ArchitectureAgent(),
-            "report_aggregator": ReportAggregatorAgent()
+            "report_aggregator": ReportAggregatorAgent(),
+            "comprehensive": ComprehensiveReviewAgent()
         }
 
     def get_all_agents(self) -> List[Agent]:

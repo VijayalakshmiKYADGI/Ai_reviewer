@@ -8,6 +8,7 @@ from .security_task import SecurityAnalysisTask
 from .architecture_task import ArchitectureAnalysisTask
 from .aggregate_task import AggregateFindingsTask
 from .format_comments_task import FormatCommentsTask
+from .comprehensive_review_task import ComprehensiveReviewTask
 
 class TaskGraph:
     """Manages the dependency chain of review tasks."""
@@ -27,56 +28,27 @@ class TaskGraph:
         """
         
         # 1. Parse (Input)
-        # Assign to Code Quality Agent as it's the most generic "Code Reader" or dedicated system agent
-        # The prompt implied "Agent: None (system task)", but CrewAI requires an agent.
-        # We assign to code_quality agent but ensure it focuses on parsing.
         parse_task = ParseCodeTask().create(
-            agent=agents["code_quality"],
+            agent=agents["comprehensive"],
             diff_content=diff_content,
             pr_details=pr_details
         )
         
-        # 2. Sequential Analysis using a Single Generalist Agent
-        # Combining experts into one agent severely reduces coordination overhead and 429 risks.
-        general_agent = agents["code_quality"]
-        
-        quality_task = QualityAnalysisTask().create(
-            agent=general_agent,
+        # 2. Comprehensive Analysis
+        # Combining all experts into one agent and one task to save quota
+        comprehensive_task = ComprehensiveReviewTask().create(
+            agent=agents["comprehensive"],
             context_tasks=[parse_task]
         )
         
-        perf_task = PerformanceAnalysisTask().create(
-            agent=general_agent,
-            context_tasks=[parse_task]
-        )
-        
-        sec_task = SecurityAnalysisTask().create(
-            agent=general_agent,
-            context_tasks=[parse_task]
-        )
-        
-        arch_task = ArchitectureAnalysisTask().create(
-            agent=general_agent,
-            context_tasks=[parse_task]
-        )
-        
-        # 3. Aggregation and Formatting
-        agg_task = AggregateFindingsTask().create(
-            agent=agents["report_aggregator"],
-            context_tasks=[quality_task, perf_task, sec_task, arch_task]
-        )
-        
+        # 3. Final Formatting and GitHub Review Prep
         fmt_task = FormatCommentsTask().create(
             agent=agents["report_aggregator"],
-            context_tasks=[agg_task]
+            context_tasks=[comprehensive_task]
         )
         
         return [
             parse_task,
-            quality_task,
-            perf_task,
-            sec_task,
-            arch_task,
-            agg_task,
+            comprehensive_task,
             fmt_task
         ]
