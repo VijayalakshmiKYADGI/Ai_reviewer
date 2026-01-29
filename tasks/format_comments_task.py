@@ -10,9 +10,11 @@ class FormatCommentsTask:
                 
                 STEPS:
                 1. Map findings from the previous task context to 'inline_comments'.
-                2. Each comment MUST have: `file_path`, `line_number` (integer), and `comment`.
-                3. Create 'summary_comment' (Brief overview of main issues).
-                4. Set 'review_state' (REQUEST_CHANGES if findings exist, else APPROVED).
+                2. **FILTER**: Only include findings with severity 'MEDIUM', 'HIGH', or 'CRITICAL' in inline_comments.
+                   LOW severity findings should be mentioned in the summary_comment but NOT as inline comments.
+                3. Each comment MUST have: `file_path`, `line_number` (integer), and `comment`.
+                4. Create 'summary_comment' (Brief overview of main issues, mention count of LOW findings if any).
+                5. Set 'review_state' (REQUEST_CHANGES if MEDIUM+ findings exist, else COMMENTED).
             """),
             expected_output='A structured GitHub PR review.',
             agent=agent,
