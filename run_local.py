@@ -56,12 +56,43 @@ async def run_local_review(repo_name: str, pr_number: int):
     print(f"STATE: {result.review_state}")
     print(f"SUMMARY: {result.summary_comment[:200]}...")
     print(f"FINDINGS: {len(result.inline_comments)}")
+    if result.pre_existing_findings:
+        print(f"PRE-EXISTING ISSUES: {len(result.pre_existing_findings)}")
     print()
     
     # 7. Post to GitHub?
-    # Note: Using synchronous input() here is intentional - it works more reliably
-    # on Windows than async alternatives. The brief blocking is acceptable for CLI usage.
-    choice = input("Do you want to post these results to GitHub? (y/n): ").strip().lower()
+    # Clear input buffer on Windows to prevent skipped prompts
+    import sys
+    import time
+    if sys.platform == 'win32':
+        try:
+            import msvcrt
+            while msvcrt.kbhit():
+                msvcrt.getch()
+        except:
+            pass
+    
+    # Small delay to ensure buffer is clear
+    time.sleep(0.1)
+    
+    # Prompt with retry logic
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        choice = input("Do you want to post these results to GitHub? (y/n): ").strip().lower()
+        
+        if choice in ['y', 'n']:
+            break
+        elif choice == '':
+            if attempt < max_attempts - 1:
+                print("⚠️ No input detected. Please try again.")
+                time.sleep(0.2)
+            else:
+                print("⚠️ No valid input after 3 attempts. Defaulting to 'n'.")
+                choice = 'n'
+        else:
+            print(f"⚠️ Invalid input '{choice}'. Please enter 'y' or 'n'.")
+            if attempt == max_attempts - 1:
+                choice = 'n'
     
     if choice == 'y':
         valid_paths = [f.filename for f in pr_info.files_changed]

@@ -115,3 +115,6 @@ class GitHubAppConfig:
 # Phase 15: Production Configuration
 ENABLE_CREWAI_PIPELINE = os.getenv("ENABLE_CREWAI_PIPELINE", "true").lower() == "true"
 MAX_FINDINGS_PER_PR = int(os.getenv("MAX_FINDINGS_PER_PR", "20"))
+
+# Review Mode Configuration
+REVIEW_MODE = os.getenv("REVIEW_MODE", "changes_only")  # Options: changes_only, full_file

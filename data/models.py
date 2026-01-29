@@ -135,6 +135,7 @@ class InlineComment(BaseModel):
 
 class GitHubReview(BaseModel):
     """Represents the final review to be posted to GitHub."""
-    inline_comments: list[InlineComment] = Field(default_factory=list, description="List of inline comments")
+    inline_comments: list[InlineComment] = Field(default_factory=list, description="List of inline comments for changed lines")
     summary_comment: str = Field(..., description="Overall summary of the review")
     review_state: str = Field(..., description="Review state: APPROVED, REQUEST_CHANGES, or COMMENTED")
+    pre_existing_findings: list[InlineComment] = Field(default_factory=list, description="Findings on unchanged lines (full_file mode only)")

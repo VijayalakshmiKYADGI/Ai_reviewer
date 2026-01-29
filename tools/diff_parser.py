@@ -112,6 +112,66 @@ class DiffParser:
         elif filename.endswith('.md'):
             return "markdown"
         return "unknown"
+    
+    def get_changed_lines(self, diff_content: str, target_file: str) -> set[int]:
+        """
+        Extract line numbers that were added or modified in the diff for a specific file.
+        
+        Args:
+            diff_content: The full diff content
+            target_file: The file path to extract changed lines for
+            
+        Returns:
+            Set of line numbers (in the NEW version of the file) that were added/modified
+        """
+        changed_lines = set()
+        in_target_file = False
+        current_new_line = 0
+        
+        lines = diff_content.splitlines()
+        
+        for line in lines:
+            # Check if we're entering the target file's diff
+            if line.startswith('diff --git') and target_file in line:
+                in_target_file = True
+                current_new_line = 0
+                continue
+            
+            # Check if we're leaving the target file (entering another file)
+            if in_target_file and line.startswith('diff --git') and target_file not in line:
+                in_target_file = False
+                continue
+            
+            if not in_target_file:
+                continue
+            
+            # Parse hunk header to get starting line number
+            # Format: @@ -old_start,old_count +new_start,new_count @@
+            if line.startswith('@@'):
+                match = re.search(r'\+(\d+)', line)
+                if match:
+                    current_new_line = int(match.group(1))
+                continue
+            
+            # Skip metadata lines
+            if line.startswith('---') or line.startswith('+++') or \
+               line.startswith('index') or line.startswith('new file') or \
+               line.startswith('deleted file'):
+                continue
+            
+            # Track added/modified lines (lines starting with +)
+            if line.startswith('+') and current_new_line > 0:
+                changed_lines.add(current_new_line)
+                current_new_line += 1
+            # Context lines and removed lines also increment the line counter
+            elif line.startswith(' ') and current_new_line > 0:
+                current_new_line += 1
+            # Removed lines don't increment new line counter
+            elif line.startswith('-'):
+                pass
+        
+        logger.info("changed_lines_extracted", file=target_file, count=len(changed_lines))
+        return changed_lines
 
 class DiffParsingTool(BaseTool):
     name: str = "Diff Parsing"

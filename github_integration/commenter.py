@@ -7,7 +7,7 @@ Formats and posts code review comments with severity indicators.
 from typing import Dict, Any, List, Optional
 import structlog
 from datetime import datetime
-from data.models import GitHubReview
+from data.models import GitHubReview, InlineComment
 from .client import GitHubClient
 
 
@@ -168,6 +168,11 @@ class GitHubCommenter:
             )
             
             print(f"✅ Posted review to {repo_full_name}#{pr_number} (Review ID: {review_id})")
+            
+            # 4. Post pre-existing findings as a separate comment (if any)
+            if github_review.pre_existing_findings:
+                await self._post_pre_existing_findings(repo_full_name, pr_number, github_review.pre_existing_findings)
+            
             return str(review_id)
         
         except Exception as e:
@@ -274,4 +279,53 @@ class GitHubCommenter:
         )
         
         print(f"✅ Posted fallback comment to {repo_full_name}#{pr_number} (Comment ID: {comment_id})")
+        return str(comment_id)
+    
+    async def _post_pre_existing_findings(
+        self,
+        repo_full_name: str,
+        pr_number: int,
+        findings: List[InlineComment]
+    ) -> str:
+        """
+        Post pre-existing findings as a separate PR comment.
+        
+        Args:
+            repo_full_name: Full repo name (owner/repo)
+            pr_number: PR number
+            findings: List of findings on unchanged lines
+            
+        Returns:
+            Comment ID
+        """
+        if not findings:
+            return ""
+        
+        # Build comment body
+        comment_body = "## 📋 Pre-existing Issues Found\n\n"
+        comment_body += f"While reviewing this PR, I also noticed **{len(findings)} existing issue(s)** in the files you modified:\n\n"
+        
+        for i, finding in enumerate(findings, 1):
+            def safe_val(obj, attr, default):
+                if isinstance(obj, dict): return obj.get(attr, default)
+                return getattr(obj, attr, default)
+
+            path = safe_val(finding, "file_path", safe_val(finding, "path", "unknown"))
+            line = safe_val(finding, "line_number", safe_val(finding, "line", 1))
+            body = safe_val(finding, "comment", safe_val(finding, "body", ""))
+            
+            comment_body += f"{i}. **`{path}:L{line}`**\n   {body}\n\n"
+        
+        comment_body += "---\n"
+        comment_body += "> 💡 **Note**: These issues existed before this PR and are not blocking approval. "
+        comment_body += "However, consider addressing them in a follow-up PR to improve overall code quality.\n"
+        
+        # Post as issue comment
+        comment_id = await self.client.create_issue_comment(
+            repo=repo_full_name,
+            pr_number=pr_number,
+            body=comment_body
+        )
+        
+        print(f"📋 Posted {len(findings)} pre-existing findings to {repo_full_name}#{pr_number} (Comment ID: {comment_id})")
         return str(comment_id)
