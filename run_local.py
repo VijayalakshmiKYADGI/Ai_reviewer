@@ -56,26 +56,12 @@ async def run_local_review(repo_name: str, pr_number: int):
     print(f"STATE: {result.review_state}")
     print(f"SUMMARY: {result.summary_comment[:200]}...")
     print(f"FINDINGS: {len(result.inline_comments)}")
+    print()
     
     # 7. Post to GitHub?
-    # Flush stdin to clear any buffered input
-    import sys
-    if hasattr(sys.stdin, 'flush'):
-        try:
-            sys.stdin.flush()
-        except:
-            pass
-    
-    # Use run_in_executor with explicit prompt
-    loop = asyncio.get_running_loop()
-    print()  # Extra newline for visibility
-    choice = await loop.run_in_executor(None, input, "Do you want to post these results to GitHub? (y/n): ")
-    
-    # Validate input
-    choice = choice.strip().lower()
-    if not choice:
-        print("⚠️ No input detected. Defaulting to 'n' (not posting).")
-        choice = 'n'
+    # Note: Using synchronous input() here is intentional - it works more reliably
+    # on Windows than async alternatives. The brief blocking is acceptable for CLI usage.
+    choice = input("Do you want to post these results to GitHub? (y/n): ").strip().lower()
     
     if choice == 'y':
         valid_paths = [f.filename for f in pr_info.files_changed]
