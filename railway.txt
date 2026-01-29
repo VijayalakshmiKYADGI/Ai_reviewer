@@ -1,3 +1,21 @@
+Step 1:
+Install Node.js (Recommended way)
+🔹 Download Node.js
+
+👉 https://nodejs.org
+
+Download LTS version (important ⚠️)
+
+During installation:
+
+✅ Check “Add to PATH”
+
+✅ Keep npm selected
+
+Finish installation
+
+Step 2:
+
 # Install Railway CLI
 npm install -g @railway/cli
 
@@ -8,3 +26,14 @@ railway login
 cd /path/to/your/code-review-crew
 railway init  # Link to your GitHub repo
 railway up    # 🚀 LIVE in 60 seconds!
+
+_________________
+Before installing requirements.txt
+
+Install Microsoft C++ Build Tools (Recommended)
+    Download from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+    Run the installer
+    Select "Desktop development with C++" workload
+    Install (this will take ~6GB of space)
+    Restart your terminal/command prompt
+    Run pip install -r requirements.txt again
