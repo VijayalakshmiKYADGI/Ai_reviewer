@@ -41,36 +41,58 @@ async def execute_review_pipeline(
             
             str_content = str(raw_result.raw) if hasattr(raw_result, 'raw') else str(raw_result)
             
-            # Cleanup: Remove markdown markers
-            clean_json = str_content
-            if "{" in str_content:
-                clean_json = "{" + str_content.split("{", 1)[1]
-            if "}" in clean_json:
-                clean_json = clean_json.rsplit("}", 1)[0] + "}"
+            # Cleanup: Remove markdown markers and extract JSON
+            clean_json = str_content.strip()
+            
+            # Remove markdown code fences if present
+            if clean_json.startswith("```"):
+                clean_json = re.sub(r'^```(?:json)?\s*', '', clean_json)
+                clean_json = re.sub(r'\s*```\s*$', '', clean_json)
+            
+            # Find JSON object boundaries
+            if "{" in clean_json and "}" in clean_json:
+                start_idx = clean_json.find("{")
+                end_idx = clean_json.rfind("}") + 1
+                clean_json = clean_json[start_idx:end_idx]
                 
-            try:
-                result_data = json.loads(clean_json)
-                final_review = GitHubReview(**result_data)
-            except Exception:
-                logger.warning("json_parse_failed_emergency_regex", raw=str_content[:50])
-                # Minimal emergency extraction
-                comments = []
-                # Greedy match for comment-like patterns in non-JSON text
-                raw_comments = re.findall(r'comment[\':]\s*[\'"]?([^\'"]+)[\'"]?', str_content)
-                raw_paths = re.findall(r'file_path[\':]\s*[\'"]?([^\'"]+)[\'"]?', str_content)
-                
-                for i in range(min(len(raw_comments), len(raw_paths))):
-                    comments.append({
-                        "file_path": raw_paths[i],
-                        "line_number": "1", # Default fallback
-                        "comment": raw_comments[i]
-                    })
-                
+            # Check if we have valid content before attempting parse
+            if not clean_json or not clean_json.strip():
+                logger.error("json_extraction_empty", raw_preview=str_content[:100])
                 final_review = GitHubReview(
-                    inline_comments=comments,
-                    summary_comment="Parsed via emergency extraction.",
-                    review_state="REQUESTED_CHANGES" if comments else "COMMENTED"
+                    inline_comments=[],
+                    summary_comment="Review extraction failed - no valid JSON output.",
+                    review_state="COMMENTED"
                 )
+            else:
+                try:
+                    result_data = json.loads(clean_json)
+                    final_review = GitHubReview(**result_data)
+                except json.JSONDecodeError as je:
+                    logger.error("json_parse_failed", error=str(je), raw_preview=clean_json[:200])
+                    # Emergency extraction
+                    comments = []
+                    raw_comments = re.findall(r'comment[\'"]?\s*:\s*[\'"]([^\'"]+)[\'"]', str_content)
+                    raw_paths = re.findall(r'file_path[\'"]?\s*:\s*[\'"]([^\'"]+)[\'"]', str_content)
+                    
+                    for i in range(min(len(raw_comments), len(raw_paths))):
+                        comments.append({
+                            "file_path": raw_paths[i],
+                            "line_number": 1,
+                            "comment": raw_comments[i]
+                        })
+                    
+                    final_review = GitHubReview(
+                        inline_comments=comments,
+                        summary_comment="Parsed via emergency extraction due to JSON error.",
+                        review_state="REQUESTED_CHANGES" if comments else "COMMENTED"
+                    )
+                except Exception as e:
+                    logger.error("unexpected_parse_error", error=str(e), raw_preview=str_content[:100])
+                    final_review = GitHubReview(
+                        inline_comments=[],
+                        summary_comment="Review extraction failed - unexpected error.",
+                        review_state="COMMENTED"
+                    )
 
         # 4. DB Save Results
         execution_time = time.time() - start_time

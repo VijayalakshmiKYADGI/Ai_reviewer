@@ -1,0 +1,25 @@
+REVIEW REPORT - 20260214_135743
+Repo: VijayalakshmiKYADGI/test | PR #7
+==================================================
+
+STATE: COMMENTED
+SUMMARY: Parsed via emergency extraction due to JSON error.
+
+--- PROCESSED FILES ---
+- test-project/api.py
+- test-project/auth_handler.py
+- test-project/config.py
+- test-project/data_processor.py
+- test-project/database.py
+- test-project/flawed_quality.py
+- test-project/inefficient_database.py
+- test-project/main.py
+- test-project/models.py
+- test-project/requirements.txt
+- test-project/services.py
+- test-project/settings.py
+- test-project/system_manager.py
+- test-project/utils.py
+- test-project/vulnerable_security.py
+
+--- FINDINGS (0) ---

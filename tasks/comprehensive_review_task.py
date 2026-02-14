@@ -5,7 +5,7 @@ from data.models import ReviewFinding, ComprehensiveReviewAnalysis
 import os
 
 class ComprehensiveReviewTask:
-    def create(self, agent: Agent, context_tasks: list[Task]) -> Task:
+    def create(self, agent: Agent, context_tasks: list[Task], diff_content: str = "") -> Task:
         # Read review mode from environment
         review_mode = os.getenv("REVIEW_MODE", "changes_only")
         
@@ -35,6 +35,9 @@ class ComprehensiveReviewTask:
                 Perform a deep, multi-dimensional technical review of the code changes identified in the previous step.
                 
                 {diff_instructions}
+
+                DIFF CONTENT:
+                {diff_content}
                 
                 Your analysis MUST cover:
                 1. QUALITY: PEP8, naming, readability, docstrings, and general best practices.

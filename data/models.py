@@ -4,7 +4,7 @@ Provides validation and serialization for agent outputs and review summaries.
 """
 
 from datetime import datetime, timezone
-from typing import Literal, Optional, Union
+from typing import Literal, Optional, Union, List
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
@@ -38,7 +38,7 @@ class AgentOutput(BaseModel):
         }
     """
     agent_name: str
-    findings: list[ReviewFinding] = Field(default_factory=list)
+    findings: List[ReviewFinding] = Field(default_factory=list)
     execution_time: float
     tokens_used: Optional[int] = None
     error: Optional[str] = None
@@ -69,7 +69,7 @@ class ReviewSummary(BaseModel):
     pr_number: int = Field(..., gt=0)
     pr_url: str
     status: Literal["pending", "running", "completed", "failed"]
-    agent_outputs: list[AgentOutput] = Field(default_factory=list)
+    agent_outputs: List[AgentOutput] = Field(default_factory=list)
     execution_time: float = 0.0
     total_cost: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -110,7 +110,7 @@ class ReviewInput(BaseModel):
     pr_number: int = Field(..., gt=0)
     pr_url: str
     diff_content: str
-    files_changed: list[str]
+    files_changed: List[str]
     language: str = "python"
     
     model_config = ConfigDict(from_attributes=True)
@@ -125,7 +125,7 @@ class ReviewInput(BaseModel):
 
 class ComprehensiveReviewAnalysis(BaseModel):
     """Container for the multi-agent consolidated analysis."""
-    findings: list[ReviewFinding] = Field(..., description="List of all detected issues")
+    findings: List[ReviewFinding] = Field(..., description="List of all detected issues")
 
 class InlineComment(BaseModel):
     """Represents a single inline comment on a file."""
@@ -135,7 +135,7 @@ class InlineComment(BaseModel):
 
 class GitHubReview(BaseModel):
     """Represents the final review to be posted to GitHub."""
-    inline_comments: list[InlineComment] = Field(default_factory=list, description="List of inline comments for changed lines")
+    inline_comments: List[InlineComment] = Field(default_factory=list, description="List of inline comments for changed lines")
     summary_comment: str = Field(..., description="Overall summary of the review")
     review_state: str = Field(..., description="Review state: APPROVED, REQUEST_CHANGES, or COMMENTED")
-    pre_existing_findings: list[InlineComment] = Field(default_factory=list, description="Findings on unchanged lines (full_file mode only)")
+    pre_existing_findings: List[InlineComment] = Field(default_factory=list, description="Findings on unchanged lines (full_file mode only)")

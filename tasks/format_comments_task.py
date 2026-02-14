@@ -35,12 +35,21 @@ class FormatCommentsTask:
                 Format findings into a GitHub PR review JSON. 
                 
                 {mode_instructions}
+
+                DIFF CONTEXT:
+                {diff_content}
                 
                 STEPS:
                 1. Map findings from the previous task context.
-                2. Each comment MUST have: `file_path`, `line_number` (integer), and `comment`.
-                3. Create 'summary_comment' (Brief overview of main issues, mention count of LOW findings if any).
-                4. Set 'review_state' (REQUEST_CHANGES if MEDIUM+ findings exist, else COMMENTED).
+                   - The previous task output contains a 'findings' list with ReviewFinding objects.
+                   - Each finding has: file_path, line_number, severity, category, issue_description.
+                2. Convert ReviewFinding objects to InlineComment format.
+                   - Each comment MUST have: `file_path`, `line_number` (integer), and `comment` (the issue_description).
+                3. **CRITICAL**: All MEDIUM, HIGH, and CRITICAL severity findings MUST be included in `inline_comments`.
+                   - Do NOT skip or filter out any MEDIUM+ findings.
+                   - Only LOW severity findings should be summarized in the summary_comment.
+                4. Create 'summary_comment' (Brief overview of main issues, mention count of LOW findings if any).
+                5. Set 'review_state' (REQUEST_CHANGES if MEDIUM+ findings exist, else COMMENTED).
             """),
             expected_output='A structured GitHub PR review.',
             agent=agent,

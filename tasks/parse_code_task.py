@@ -23,7 +23,7 @@ class ParseCodeTask:
                 3. Prepare the input for the next steps.
                 
                 DIFF CONTENT:
-                {diff_content[:2000]}... (truncated if too long)
+                {diff_content}
             """),
             expected_output="A structured summary of files changed and their validity for review.",
             agent=agent,

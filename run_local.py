@@ -59,6 +59,63 @@ async def run_local_review(repo_name: str, pr_number: int):
     if result.pre_existing_findings:
         print(f"PRE-EXISTING ISSUES: {len(result.pre_existing_findings)}")
     print()
+
+    # --- LOG RESULTS TO FILE ---
+    import datetime
+    import json
+    
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"logs/review_{timestamp}.txt"
+    os.makedirs("logs", exist_ok=True)
+    
+    with open(log_filename, "w", encoding="utf-8") as f:
+        f.write(f"REVIEW REPORT - {timestamp}\n")
+        f.write(f"Repo: {repo_name} | PR #{pr_number}\n")
+        f.write("="*50 + "\n\n")
+        
+        f.write(f"STATE: {result.review_state}\n")
+        f.write(f"SUMMARY: {result.summary_comment}\n\n")
+        
+        f.write("--- PROCESSED FILES ---\n")
+        for filename in [f.filename for f in pr_info.files_changed]:
+            f.write(f"- {filename}\n")
+        f.write("\n")
+        
+        f.write(f"--- FINDINGS ({len(result.inline_comments)}) ---\n")
+        for finding in result.inline_comments:
+            f.write(f"{finding.file_path}:{finding.line_number}\n")
+            f.write(f"Comment: {finding.comment}\n")
+            f.write("-" * 20 + "\n")
+            
+        if result.pre_existing_findings:
+            f.write(f"\n--- PRE-EXISTING ISSUES ({len(result.pre_existing_findings)}) ---\n")
+            for finding in result.pre_existing_findings:
+                f.write(f"{finding.file_path}:{finding.line_number}\n")
+                f.write(f"Comment: {finding.comment}\n")
+                f.write("-" * 20 + "\n")
+
+    print(f"📄 Detailed review log saved to: {log_filename}")
+    
+    # --- ALSO CREATE FIXED LOG FILE ---
+    fixed_log_path = "logs/log.txt"
+    with open(fixed_log_path, "w", encoding="utf-8") as f:
+        f.write(f"LATEST REVIEW - {timestamp}\n")
+        f.write(f"Repo: {repo_name} | PR #{pr_number}\n")
+        f.write("="*50 + "\n\n")
+        
+        f.write("--- FILES PROCESSED ---\n")
+        for filename in [f.filename for f in pr_info.files_changed]:
+            f.write(f"- {filename}\n")
+        f.write("\n")
+        
+        f.write(f"STATE: {result.review_state}\n")
+        f.write(f"SUMMARY: {result.summary_comment}\n\n")
+        
+        f.write(f"FINDINGS: {len(result.inline_comments)}\n")
+        if result.pre_existing_findings:
+            f.write(f"PRE-EXISTING ISSUES: {len(result.pre_existing_findings)}\n")
+    
+    print(f"📄 Fixed log file updated: {fixed_log_path}")
     
     # 7. Post to GitHub?
     # Clear input buffer on Windows to prevent skipped prompts

@@ -11,6 +11,28 @@ from pydantic import BaseModel, Field
 from github.PullRequest import PullRequest
 from .client import GitHubClient
 
+import logging
+import sys
+
+# Configure logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Check if handler already exists to avoid duplicates
+if not logger.handlers:
+    # Create logs directory if it doesn't exist
+    os.makedirs('logs', exist_ok=True)
+    
+    # File handler
+    file_handler = logging.FileHandler('logs/pr_fetcher.log', encoding='utf-8')
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
+    
+    # Stream handler (optional, but good for immediate feedback if needed, 
+    # currently relying on file to keep console clean for the main app)
+    # stream_handler = logging.StreamHandler(sys.stdout)
+    # logger.addHandler(stream_handler)
+
 
 class FileChange(BaseModel):
     """Represents a single file changed in a PR."""
@@ -109,6 +131,8 @@ class PRFetcher:
         ext = os.path.splitext(filename)[1].lower()
         return ext in binary_extensions
     
+        return False
+
     def _should_skip_file(self, file_change, max_lines: int = 50000) -> bool:
         """
         Determine if file should be skipped.
@@ -124,14 +148,17 @@ class PRFetcher:
         
         # Skip binary files
         if self._is_binary_file(filename):
+            logger.info(f"Skipping {filename}: Identified as binary file.")
             return True
         
         # Skip files without patches (e.g., binary files)
         if not hasattr(file_change, 'patch') or not file_change.patch:
+            logger.warning(f"Skipping {filename}: No patch data available (possibly binary or LFS).")
             return True
         
         # Skip very large files
         if file_change.changes > max_lines:
+            logger.warning(f"Skipping {filename}: too large ({file_change.changes} lines)")
             print(f"Skipping {filename}: too large ({file_change.changes} lines)")
             return True
         
@@ -162,18 +189,29 @@ class PRFetcher:
         owner, repo = parts
         
         # Get PR object
-        pr: PullRequest = self.client.get_pr(owner, repo, pr_number)
-        
+        try:
+            pr: PullRequest = self.client.get_pr(owner, repo, pr_number)
+        except Exception as e:
+            logger.error(f"Failed to fetch PR {repo_full_name}#{pr_number}: {e}")
+            raise
+
         # Extract metadata
         pr_url = pr.html_url
         title = pr.title
         author = pr.user.login
         
+        logger.info(f"Fetching PR: {title} by {author} ({pr_url})")
+
         # Fetch all changed files
         files_changed: List[FileChange] = []
         full_diff_parts: List[str] = []
         
-        for file in pr.get_files():
+        files = list(pr.get_files())
+        logger.info(f"Total files found in PR: {len(files)}")
+
+        for file in files:
+            logger.info(f"Processing file: {file.filename} (Status: {file.status}, Additions: {file.additions}, Deletions: {file.deletions})")
+            
             # Skip binary/large files
             if self._should_skip_file(file):
                 continue
@@ -200,6 +238,8 @@ class PRFetcher:
             full_diff_parts.append(file.patch or "")
             full_diff_parts.append("")  # Empty line between files
         
+        logger.info(f"Successfully processed {len(files_changed)}/{len(files)} files.")
+
         # Combine full diff
         full_diff = "\n".join(full_diff_parts)
         

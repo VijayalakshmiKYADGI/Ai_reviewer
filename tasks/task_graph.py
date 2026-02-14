@@ -38,13 +38,15 @@ class TaskGraph:
         # Combining all experts into one agent and one task to save quota
         comprehensive_task = ComprehensiveReviewTask().create(
             agent=agents["comprehensive"],
-            context_tasks=[parse_task]
+            context_tasks=[parse_task],
+            diff_content=diff_content
         )
         
         # 3. Final Formatting and GitHub Review Prep
         fmt_task = FormatCommentsTask().create(
             agent=agents["report_aggregator"],
-            context_tasks=[comprehensive_task]
+            context_tasks=[comprehensive_task],
+            diff_content=diff_content
         )
         
         return [
