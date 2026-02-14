@@ -18,15 +18,18 @@ class ComprehensiveReviewTask:
                 - **ONLY create findings for lines that start with `+` (newly added or modified lines).**
                 - **IGNORE all context lines** (lines that don't start with `+` or `-`), even if they contain issues.
                 - **IGNORE removed lines** (lines starting with `-`).
-                - The goal is to review what the PR author is ADDING/CHANGING, not pre-existing code.
+                - **LINE NUMBERING**: You MUST calculate the line number from the hunk headers (`@@ -old,count +new,count @@`). 
+                  - The `+new` number is the start of the new file's line count for that hunk.
+                  - Each line in the hunk (including ` ` and `+`) increments the new line counter.
+                  - `-` lines do NOT increment the new line counter.
+                  - **CRITICAL**: If your calculated line number does not correspond to a `+` line in the diff, do NOT report it as an inline finding.
             """
         else:  # full_file mode
             diff_instructions = """
                 **FULL FILE REVIEW MODE**
                 - You are reviewing the ENTIRE file content, including both changed and unchanged lines.
-                - The diff shows lines with prefixes: `-` (removed), `+` (added/modified), ` ` (unchanged context).
-                - **Create findings for ALL issues you find**, regardless of whether the line was changed.
                 - Mark each finding with the line number from the NEW version of the file.
+                - Use hunk headers (`@@ -old,count +new,count @@`) to synchronize your line counting.
                 - The formatting task will later separate changed vs unchanged line findings for proper posting.
             """
         
@@ -54,10 +57,13 @@ class ComprehensiveReviewTask:
                     - `category`: (string) e.g., 'SECURITY', 'QUALITY'.
                     - `issue_description`: (string) A clear explanation of the problem.
                     - `agent_name`: (string) Set this to 'Lead Software Engineer'.
+                - **TOTAL LIMIT**: You MUST report a maximum of 20 findings total. If you find more than 20, only report the 20 most critical/complex ones.
+                - **STRICT UNIQUENESS**: Each `line_number` MUST appear only ONCE in the list. If a single line has multiple issues, merge all details into one `issue_description`. 
+                - **NO DUPLICATION**: Do not repeat the same finding or very similar findings.
                 - Focus on impactful findings. Don't nitpick.
                 - Wrap your response in the 'findings' key.
             """),
-            expected_output="A JSON object with a 'findings' key containing the list of issues.",
+            expected_output="A single JSON object with a 'findings' key. DO NOT repeat the JSON. DO NOT include any text outside the JSON block.",
             agent=agent,
             context=context_tasks,
             output_pydantic=ComprehensiveReviewAnalysis

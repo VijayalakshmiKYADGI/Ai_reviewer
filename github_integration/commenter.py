@@ -121,7 +121,8 @@ class GitHubCommenter:
         pr_number: int,
         github_review: GitHubReview,
         valid_paths: Optional[List[str]] = None,
-        event: str = "COMMENT"
+        event: str = "COMMENT",
+        diff_content: str = ""
     ) -> str:
         """
         Post a complete code review to GitHub PR.
@@ -132,26 +133,58 @@ class GitHubCommenter:
             github_review: GitHubReview object from CrewAI pipeline
             valid_paths: List of allowed file paths
             event: GitHub review event (COMMENT, REQUEST_CHANGES, APPROVE)
+            diff_content: Raw diff content for line validation
             
         Returns:
             Review ID
         """
-        # 1. Format the summary
-        summary = self._format_summary(github_review)
+        # 1. Setup line validation if diff is provided
+        from tools.diff_parser import DiffParser
+        parser = DiffParser()
+        changed_lines_cache = {}
+
+        # 2. Format the summary (we'll append validation warnings here if any)
+        summary_base = self._format_summary(github_review)
+        mislocated_findings = []
         
-        # 2. Format inline comments
+        # 3. Format inline comments
         formatted_comments = []
         for comment in github_review.inline_comments:
             path = getattr(comment, "file_path", getattr(comment, "path", ""))
+            line = getattr(comment, "line_number", getattr(comment, "line", 0))
             
             # Filter comments for files that actually exist in the diff
             if valid_paths is not None and path not in valid_paths:
                 print(f"⚠️ Skipping comment for invalid path: {path}")
+                mislocated_findings.append(comment)
                 continue
+            
+            # Line validation if diff available
+            if diff_content:
+                if path not in changed_lines_cache:
+                    changed_lines_cache[path] = parser.get_changed_lines(diff_content, path)
                 
-            formatted_comments.append(self._format_comment(comment))
+                valid_lines = changed_lines_cache[path]
+                if int(line) not in valid_lines:
+                    print(f"⚠️ Line {line} not in diff for {path}. Moving to summary.")
+                    mislocated_findings.append(comment)
+                    continue
+                
+            formatted_comment = self._format_comment(comment)
+            # Add 'side' parameter for newer GitHub API compliance
+            formatted_comment["side"] = "RIGHT"
+            formatted_comments.append(formatted_comment)
         
-        # 3. Post review via GitHub API
+        # 4. Handle mislocated findings (add to summary)
+        if mislocated_findings:
+            summary_base += "\n\n### 📋 Additional Findings (General/Context)\n"
+            for f in mislocated_findings:
+                path = getattr(f, "file_path", getattr(f, "path", "unknown"))
+                line = getattr(f, "line_number", getattr(f, "line", "?"))
+                body = getattr(f, "comment", getattr(f, "body", ""))
+                summary_base += f"- **{path}:L{line}**: {body}\n"
+
+        # 5. Post review via GitHub API
         try:
             # Determine correct event (override 'COMMENT' if results are critical)
             if github_review.review_state == "REQUESTED_CHANGES":
@@ -162,14 +195,14 @@ class GitHubCommenter:
             review_id = await self.client.create_review(
                 repo=repo_full_name,
                 pr_number=pr_number,
-                body=summary,
+                body=summary_base,
                 event=event,
                 comments=formatted_comments
             )
             
             print(f"✅ Posted review to {repo_full_name}#{pr_number} (Review ID: {review_id})")
             
-            # 4. Post pre-existing findings as a separate comment (if any)
+            # 6. Post pre-existing findings as a separate comment (if any)
             if github_review.pre_existing_findings:
                 await self._post_pre_existing_findings(repo_full_name, pr_number, github_review.pre_existing_findings)
             
@@ -177,8 +210,10 @@ class GitHubCommenter:
         
         except Exception as e:
             # Handle 422 "line not in diff" errors by falling back to PR comment
-            if "422" in str(e) or "Unprocessable Entity" in str(e):
-                print(f"⚠️ Inline comments failed (422), falling back to single PR comment")
+            error_str = str(e)
+            if "422" in error_str or "Unprocessable Entity" in error_str:
+                print(f"⚠️ Inline comments failed (422) even after validation. Reason: {error_str}")
+                print(f"⚠️ Falling back to single PR comment.")
                 return await self._post_as_pr_comment(repo_full_name, pr_number, github_review)
             else:
                 print(f"❌ Failed to post review: {e}")

@@ -153,7 +153,7 @@ async def run_local_review(repo_name: str, pr_number: int):
     
     if choice == 'y':
         valid_paths = [f.filename for f in pr_info.files_changed]
-        await commenter.post_review(repo_name, pr_number, result, valid_paths=valid_paths)
+        await commenter.post_review(repo_name, pr_number, result, valid_paths=valid_paths, diff_content=pr_info.full_diff)
         print("✨ Posted to GitHub successfully!")
     else:
         print("🚫 Review not posted.")

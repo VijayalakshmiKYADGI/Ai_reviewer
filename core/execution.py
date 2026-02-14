@@ -28,7 +28,11 @@ async def execute_review_pipeline(
     try:
         # 2. Crew Execution
         crew_runner = ReviewCrew(config)
-        raw_result = crew_runner.kickoff(review_input)
+        try:
+            raw_result = crew_runner.kickoff(review_input)
+        except Exception as e:
+            logger.warning("kickoff_crashed_externally", error=str(e))
+            raw_result = f"CRITICAL_SYSTEM_ERROR: {str(e)}"
         
         # 3. Robust Result Handling
         final_review: GitHubReview
@@ -41,19 +45,32 @@ async def execute_review_pipeline(
             
             str_content = str(raw_result.raw) if hasattr(raw_result, 'raw') else str(raw_result)
             
-            # Cleanup: Remove markdown markers and extract JSON
+            # 1. Isolate the FIRST JSON object if multiple exist (handles duplication)
             clean_json = str_content.strip()
             
             # Remove markdown code fences if present
-            if clean_json.startswith("```"):
-                clean_json = re.sub(r'^```(?:json)?\s*', '', clean_json)
-                clean_json = re.sub(r'\s*```\s*$', '', clean_json)
+            if "```" in clean_json:
+                # Find first occurrence of a JSON block
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', clean_json, re.DOTALL)
+                if json_match:
+                    clean_json = json_match.group(1)
+                else:
+                    # Fallback to simple fence removal
+                    clean_json = re.sub(r'^```(?:json)?\s*', '', clean_json)
+                    clean_json = re.sub(r'\s*```\s*$', '', clean_json)
             
-            # Find JSON object boundaries
+            # Find the first balanced JSON object boundaries
             if "{" in clean_json and "}" in clean_json:
-                start_idx = clean_json.find("{")
-                end_idx = clean_json.rfind("}") + 1
-                clean_json = clean_json[start_idx:end_idx]
+                stack = []
+                start_ptr = clean_json.find("{")
+                for i in range(start_ptr, len(clean_json)):
+                    if clean_json[i] == "{":
+                        stack.append(i)
+                    elif clean_json[i] == "}":
+                        stack.pop()
+                        if not stack:
+                            clean_json = clean_json[start_ptr:i+1]
+                            break
                 
             # Check if we have valid content before attempting parse
             if not clean_json or not clean_json.strip():
@@ -67,31 +84,34 @@ async def execute_review_pipeline(
                 try:
                     result_data = json.loads(clean_json)
                     final_review = GitHubReview(**result_data)
-                except json.JSONDecodeError as je:
+                except (json.JSONDecodeError, Exception) as je:
                     logger.error("json_parse_failed", error=str(je), raw_preview=clean_json[:200])
-                    # Emergency extraction
+                    # Emergency extraction - regex based to capture real line numbers
                     comments = []
-                    raw_comments = re.findall(r'comment[\'"]?\s*:\s*[\'"]([^\'"]+)[\'"]', str_content)
-                    raw_paths = re.findall(r'file_path[\'"]?\s*:\s*[\'"]([^\'"]+)[\'"]', str_content)
+                    # Improved regex to find objects with file_path, line_number, and comment
+                    # Handles various quoting styles and spacing
+                    blocks = re.findall(r'\{(?:[^{}]|(?R))*\}', str_content, re.DOTALL)
                     
-                    for i in range(min(len(raw_comments), len(raw_paths))):
+                    # If regex-recursion is not supported, use a simpler approach
+                    # Look for things that look like InlineComment dicts
+                    pattern = r'[\'"]file_path[\'"]\s*:\s*[\'"]([^\'"]+)[\'"].*?[\'"]line_number[\'"]\s*:\s*(\d+).*?[\'"]comment[\'"]\s*:\s*[\'"]([^\'"]+)[\'"]'
+                    matches = re.findall(pattern, str_content, re.DOTALL)
+                    
+                    for path, line, msg in matches:
                         comments.append({
-                            "file_path": raw_paths[i],
-                            "line_number": 1,
-                            "comment": raw_comments[i]
+                            "file_path": path,
+                            "line_number": int(line),
+                            "comment": msg
                         })
+                    
+                    # Also try to find summary_comment and review_state
+                    summary_match = re.search(r'[\'"]summary_comment[\'"]\s*:\s*[\'"]([^\'"]+)[\'"]', str_content, re.DOTALL)
+                    state_match = re.search(r'[\'"]review_state[\'"]\s*:\s*[\'"]([^\'"]+)[\'"]', str_content)
                     
                     final_review = GitHubReview(
                         inline_comments=comments,
-                        summary_comment="Parsed via emergency extraction due to JSON error.",
-                        review_state="REQUESTED_CHANGES" if comments else "COMMENTED"
-                    )
-                except Exception as e:
-                    logger.error("unexpected_parse_error", error=str(e), raw_preview=str_content[:100])
-                    final_review = GitHubReview(
-                        inline_comments=[],
-                        summary_comment="Review extraction failed - unexpected error.",
-                        review_state="COMMENTED"
+                        summary_comment=summary_match.group(1) if summary_match else "Parsed via emergency extraction due to JSON error.",
+                        review_state=state_match.group(1) if state_match else "REQUESTED_CHANGES" if comments else "COMMENTED"
                     )
 
         # 4. DB Save Results

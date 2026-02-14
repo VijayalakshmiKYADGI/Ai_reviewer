@@ -143,7 +143,8 @@ class WebhookHandler:
                 repo_full_name,
                 pr_number,
                 review_result,
-                valid_paths=valid_paths
+                valid_paths=valid_paths,
+                diff_content=pr_info.full_diff
             )
             
             return {

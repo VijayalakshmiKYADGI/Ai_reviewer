@@ -12,7 +12,7 @@ class ReviewFinding(BaseModel):
     """
     Represents a single code review finding from an agent.
     """
-    severity: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    severity: str  # Simplified from Literal for CrewAI stability
     agent_name: str
     file_path: str = Field("unknown", description="Path to the file")
     line_number: int = Field(1, description="Line number")
@@ -27,18 +27,9 @@ class ReviewFinding(BaseModel):
 class AgentOutput(BaseModel):
     """
     Represents the complete output from a single agent execution.
-    
-    Example:
-        {
-            "agent_name": "security",
-            "findings": [...],
-            "execution_time": 12.5,
-            "tokens_used": 1500,
-            "error": null
-        }
     """
     agent_name: str
-    findings: List[ReviewFinding] = Field(default_factory=list)
+    findings: list[ReviewFinding] = Field(default_factory=list)
     execution_time: float
     tokens_used: Optional[int] = None
     error: Optional[str] = None
@@ -49,27 +40,13 @@ class AgentOutput(BaseModel):
 class ReviewSummary(BaseModel):
     """
     Complete summary of a PR review session with all agent outputs.
-    
-    Example:
-        {
-            "review_id": 1,
-            "repo_name": "myorg/myrepo",
-            "pr_number": 123,
-            "pr_url": "https://github.com/myorg/myrepo/pull/123",
-            "status": "completed",
-            "agent_outputs": [...],
-            "execution_time": 45.2,
-            "total_cost": 0.0234,
-            "created_at": "2026-01-16T19:00:00Z",
-            "completed_at": "2026-01-16T19:00:45Z"
-        }
     """
     review_id: Optional[int] = None
     repo_name: str
     pr_number: int = Field(..., gt=0)
     pr_url: str
-    status: Literal["pending", "running", "completed", "failed"]
-    agent_outputs: List[AgentOutput] = Field(default_factory=list)
+    status: str  # Simplified from Literal
+    agent_outputs: list[AgentOutput] = Field(default_factory=list)
     execution_time: float = 0.0
     total_cost: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

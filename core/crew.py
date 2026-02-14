@@ -115,4 +115,5 @@ class ReviewCrew:
 
         except Exception as e:
             logger.error("crew_kickoff_failed", error=str(e))
-            raise e
+            # Return the error as a string to allow execute_review_pipeline to use emergency extraction
+            return f"ERROR_DURING_KICKOFF: {str(e)}"

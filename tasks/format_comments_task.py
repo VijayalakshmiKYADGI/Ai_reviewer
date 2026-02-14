@@ -15,8 +15,9 @@ class FormatCommentsTask:
                   1. `inline_comments`: Findings on lines that were ADDED/MODIFIED (part of the diff)
                   2. `pre_existing_findings`: Findings on lines that were NOT changed (context lines)
                 - To determine which lines were changed, look at the diff format:
-                  - Lines starting with `+` (not `+++`) are changed lines
-                  - Lines starting with ` ` (space) or not in the diff are unchanged
+                  - Lines starting with `+` (not `+++`) are changed lines.
+                  - Lines starting with ` ` (space) or not in the diff are unchanged.
+                - **CRITICAL LINE VALIDATION**: Ensure the `line_number` matches the line in the NEW file.
                 - **FILTER**: Only include MEDIUM, HIGH, or CRITICAL severity in both lists.
                 - LOW severity findings go in summary_comment only.
             """
@@ -48,10 +49,11 @@ class FormatCommentsTask:
                 3. **CRITICAL**: All MEDIUM, HIGH, and CRITICAL severity findings MUST be included in `inline_comments`.
                    - Do NOT skip or filter out any MEDIUM+ findings.
                    - Only LOW severity findings should be summarized in the summary_comment.
-                4. Create 'summary_comment' (Brief overview of main issues, mention count of LOW findings if any).
-                5. Set 'review_state' (REQUEST_CHANGES if MEDIUM+ findings exist, else COMMENTED).
+                4. **DEDUPLICATION**: If the previous task provided duplicate findings for the same line, MERGE them into a single comment. Ensure each `file_path` + `line_number` combination appears only ONCE in `inline_comments`.
+                5. Create 'summary_comment' (Brief overview of main issues, mention count of LOW findings if any).
+                6. Set 'review_state' (REQUEST_CHANGES if MEDIUM+ findings exist, else COMMENTED).
             """),
-            expected_output='A structured GitHub PR review.',
+            expected_output='A single structured GitHub PR review JSON object. DO NOT repeat the output. DO NOT include conversational text.',
             agent=agent,
             context=context_tasks,
             output_pydantic=GitHubReview
